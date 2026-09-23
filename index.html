@@ -742,7 +742,7 @@ async function saveKriyasToStorage(){
 // `wrangler deploy` prints the real URL - paste it here, keeping the
 // "/api/chat" path on the end. This is a public URL, safe to hard-code
 // (it is NOT a secret - only the API key inside the Worker is secret).
-const WORKER_URL = "https://yoga-assistant-worker.YOUR_CLOUDFLARE_SUBDOMAIN.workers.dev/api/chat";
+const WORKER_URL = "https://yoga-assistant-worker.yogai.workers.dev/api/chat";
 
 const DEFAULT_SYSTEM_PROMPT = "You are a friendly, knowledgeable yoga and fitness assistant embedded in a yoga practice app. Help the user with questions about yoga poses, exercise form, and wellness, and with using this app. Keep answers concise and encouraging.";
 let chatHistory = [];
