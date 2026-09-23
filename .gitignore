@@ -1,0 +1,18 @@
+# Old Express server (superseded by worker/) - keep ignored if you keep the folder around
+server/node_modules/
+server/.env
+
+# Cloudflare Worker
+worker/node_modules/
+worker/.wrangler/
+worker/.dev.vars
+
+# Environment / secret files
+.env
+.env.*
+
+# macOS
+.DS_Store
+
+# npm
+npm-debug.log

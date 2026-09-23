@@ -1,0 +1,17 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "yoga-assistant-worker",
+  "main": "worker.js",
+  // Keep this within ~30 days of today when you first deploy; Cloudflare
+  // uses it to pin runtime behavior. Update it if you redeploy much later.
+  "compatibility_date": "2026-09-22",
+
+  // Non-secret configuration. Edit MY_GITHUB_USERNAME below to your real
+  // GitHub username before deploying - this is what CORS checks against.
+  // GEMINI_API_KEY is deliberately NOT here - it's set as a secret
+  // (see worker/README.md), never written to this file.
+  "vars": {
+    "GEMINI_MODEL": "gemini-3.6-flash",
+    "ALLOWED_ORIGIN": "https://kartikeya-autithya.github.io"
+  }
+}
