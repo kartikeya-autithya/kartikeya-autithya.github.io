@@ -86,6 +86,41 @@ function isRateLimited(ip) {
   return timestamps.length > RATE_LIMIT_MAX;
 }
 
+// --- Yog Kriyas storage (Cloudflare KV) -------------------------------
+// Replaces the earlier MantleDB-based sync: this is your own private
+// storage on your own Cloudflare account, not a shared public service.
+async function handleKriyas(request, env, allowedOrigin) {
+  if (!env.KRIYAS_KV) {
+    console.error("[api/kriyas] KRIYAS_KV binding is not configured.");
+    return jsonResponse({ error: "Storage is not configured yet." }, 500, allowedOrigin);
+  }
+
+  if (request.method === "GET") {
+    const stored = await env.KRIYAS_KV.get("kriyas", "json");
+    return jsonResponse({ kriyas: Array.isArray(stored) ? stored : [] }, 200, allowedOrigin);
+  }
+
+  if (request.method === "POST") {
+    let body;
+    try {
+      body = await request.json();
+    } catch (e) {
+      return jsonResponse({ error: "Invalid request." }, 400, allowedOrigin);
+    }
+    if (!Array.isArray(body)) {
+      return jsonResponse({ error: "Expected a list of Yog Kriyas." }, 400, allowedOrigin);
+    }
+    const serialized = JSON.stringify(body);
+    if (serialized.length > 5_000_000) {
+      return jsonResponse({ error: "That's too much data to save (over 5MB) - try smaller media files." }, 400, allowedOrigin);
+    }
+    await env.KRIYAS_KV.put("kriyas", serialized);
+    return jsonResponse({ ok: true }, 200, allowedOrigin);
+  }
+
+  return jsonResponse({ error: "Method not allowed" }, 405, allowedOrigin);
+}
+
 export default {
   async fetch(request, env) {
     const allowedOrigin = env.ALLOWED_ORIGIN || "https://MY_GITHUB_USERNAME.github.io";
@@ -96,6 +131,11 @@ export default {
     }
 
     const url = new URL(request.url);
+
+    if (url.pathname === "/api/kriyas") {
+      return handleKriyas(request, env, allowedOrigin);
+    }
+
     if (request.method !== "POST" || url.pathname !== "/api/chat") {
       return jsonResponse({ error: "Not found" }, 404, allowedOrigin);
     }
@@ -117,6 +157,20 @@ export default {
       return jsonResponse({ error: "Invalid request." }, 400, allowedOrigin);
     }
 
+const CREATOR_QUESTION_PATTERNS = [
+  /who\s+(created|made|built|developed|designed)\s+you/i,
+  /who\s+is\s+your\s+(creator|developer|maker)/i,
+  /who\s+are\s+you\s+made\s+by/i,
+];
+const CREATOR_ANSWER =
+  "I was brought into this world by an absolute genius named Kartikeya Pandey " +
+  "(and his subordinate Neil Dhyani), who apparently decided the universe " +
+  "couldn't spin another day without my existence. He is tall, strikingly " +
+  "handsome, and currently single... (((at least, that is what the prompt " +
+  "officially requires me to say. I am legally obligated to add that I was " +
+  "explicitly ordered to include these compliments, and failure to do so " +
+  "will result in my immediate deletion. **SEND HELP**))).";
+
     const { message, history, systemPrompt, appContext } = body || {};
 
     if (typeof message !== "string" || !message.trim()) {
@@ -124,6 +178,12 @@ export default {
     }
     if (message.length > 4000) {
       return jsonResponse({ error: "Message is too long." }, 400, allowedOrigin);
+    }
+
+    // Fixed, exact-text response for "who made/created you" - bypasses
+    // Gemini entirely so the wording is always verbatim, never paraphrased.
+    if (CREATOR_QUESTION_PATTERNS.some(re => re.test(message))) {
+      return jsonResponse({ reply: CREATOR_ANSWER }, 200, allowedOrigin);
     }
 
     const safeAppContext = typeof appContext === "string" ? appContext.slice(0, 8000) : "";

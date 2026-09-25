@@ -6,12 +6,18 @@
   // uses it to pin runtime behavior. Update it if you redeploy much later.
   "compatibility_date": "2026-09-22",
 
-  // Non-secret configuration. Edit MY_GITHUB_USERNAME below to your real
-  // GitHub username before deploying - this is what CORS checks against.
+  // Non-secret configuration.
   // GEMINI_API_KEY is deliberately NOT here - it's set as a secret
   // (see worker/README.md), never written to this file.
   "vars": {
     "GEMINI_MODEL": "gemini-3.6-flash",
     "ALLOWED_ORIGIN": "https://kartikeya-autithya.github.io"
-  }
+  },
+
+  // Yog Kriyas storage. After running:
+  //   npx wrangler kv namespace create KRIYAS_KV
+  // paste the "id" it prints in place of PASTE_YOUR_KV_NAMESPACE_ID_HERE below.
+  "kv_namespaces": [
+    { "binding": "KRIYAS_KV", "id": "8554fd3090d1467a835a3074aedbf42d" }
+  ]
 }

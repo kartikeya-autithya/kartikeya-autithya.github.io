@@ -284,7 +284,10 @@
     <div class="card">
       <button class="back-link" onclick="goToScreen('home')">← Back</button>
       <h2>Learn More About Yoga</h2>
-      <button class="btn-primary" onclick="showLearnEdit(null)" style="margin-bottom:18px;">+ Add Yog Kriya</button>
+      <button class="btn-primary" onclick="showLearnEdit(null)" style="margin-bottom:10px;">+ Add Yog Kriya</button>
+      <button class="btn-secondary" onclick="exportKriyas()" style="margin-bottom:18px; margin-left:8px;">⬇ Export backup</button>
+      <input type="file" id="kriya-import-input" accept="application/json" style="display:none;" onchange="importKriyas(event)">
+      <button class="btn-secondary" onclick="document.getElementById('kriya-import-input').click()" style="margin-bottom:18px; margin-left:8px;">⬆ Import backup</button>
       <div id="kriya-list"></div>
     </div>
   </div>
@@ -688,6 +691,8 @@ async function ensureSyncBlob(){
   }
 }
 
+const KRIYAS_API_URL = WORKER_URL.replace("/api/chat", "/api/kriyas");
+
 async function loadKriyas(){
   // Local cache first, so the list isn't empty while we wait on the network
   try {
@@ -695,38 +700,34 @@ async function loadKriyas(){
     kriyaList = cached ? JSON.parse(cached) : [];
   } catch(e){ kriyaList = []; }
 
-  await ensureSyncBlob();
-  if(!syncId) return; // offline / init failed - stick with local cache
-
   try {
-    const res = await fetch(getSyncUrl());
+    const res = await fetch(KRIYAS_API_URL);
     if(res.ok){
       const data = await res.json();
-      kriyaList = Array.isArray(data) ? data : [];
+      kriyaList = Array.isArray(data.kriyas) ? data.kriyas : [];
       localStorage.setItem(KRIYA_CACHE_KEY, JSON.stringify(kriyaList));
     }
-    // a 404 just means nothing saved yet under this namespace - keep local cache
   } catch(e){
-    console.warn("Could not reach the sync server - showing local cache.", e);
+    console.warn("Could not reach your Worker's storage - showing local cache.", e);
   }
 }
 
 async function saveKriyasToStorage(){
   localStorage.setItem(KRIYA_CACHE_KEY, JSON.stringify(kriyaList));
-  if(!syncId){
-    alert("Saved locally on this device only - could not reach the sync server, so this won't appear on other browsers yet.");
-    return true;
-  }
   try {
-    const res = await fetch(getSyncUrl(), {
+    const res = await fetch(KRIYAS_API_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(kriyaList),
     });
-    if(!res.ok) throw new Error("POST failed");
+    if(!res.ok){
+      const errBody = await res.json().catch(()=>({}));
+      alert("Could not save to the cloud: " + (errBody.error || "unknown error") + ". Saved locally on this device only for now.");
+      return true;
+    }
     return true;
   } catch(e){
-    alert("Could not sync to the cloud (maybe the file is too large, or you're offline). Saved locally on this device only for now.");
+    alert("Could not reach your Worker (offline?). Saved locally on this device only for now.");
     return true;
   }
 }
@@ -991,6 +992,38 @@ window.showLearnList = async function(){
   document.getElementById("kriya-list").innerHTML = `<div class="empty-state">Loading...</div>`;
   await loadKriyas();
   renderKriyaList();
+};
+
+// --- Local backup: save/restore Yog Kriyas as a JSON file on your computer ---
+window.exportKriyas = function(){
+  const blob = new Blob([JSON.stringify(kriyaList, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "yog-kriyas-backup-" + new Date().toISOString().slice(0,10) + ".json";
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+window.importKriyas = function(event){
+  if(!isMaster){ alert("View-only mode - confirm you're the master in Settings first."); event.target.value = ""; return; }
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async () => {
+    try {
+      const data = JSON.parse(reader.result);
+      if(!Array.isArray(data)) throw new Error("Not a valid backup file.");
+      if(!confirm(`Import ${data.length} Yog Kriyas? This replaces what's currently saved.`)) return;
+      kriyaList = data;
+      await saveKriyasToStorage();
+      renderKriyaList();
+    } catch(e){
+      alert("Could not read that file - make sure it's a backup exported from this app.");
+    }
+    event.target.value = "";
+  };
+  reader.readAsText(file);
 };
 
 function renderKriyaList(){
