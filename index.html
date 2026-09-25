@@ -84,6 +84,8 @@
   .chat-bubble { max-width:75%; padding:10px 14px; border-radius:14px; font-size:.9rem; line-height:1.4; white-space:pre-wrap; }
   .chat-user { align-self:flex-end; background:var(--accent); color:#10241a; border-bottom-right-radius:4px; }
   .chat-assistant { align-self:flex-start; background:#2e3650; color:var(--text); border-bottom-left-radius:4px; }
+  .read-aloud-btn { align-self:flex-start; background:none; border:1px solid var(--border); color:var(--text-dim); font-size:.72rem; padding:3px 10px; margin-top:-4px; border-radius:10px; }
+  .read-aloud-btn:hover { color:var(--accent); border-color:var(--accent); }
   .chat-error { align-self:center; color:var(--danger); font-size:.82rem; }
   .chat-input-row { display:flex; gap:10px; }
   .chat-input-row input { flex:1; background:#1e2434; border:1px solid var(--border); color:var(--text); border-radius:8px; padding:10px 12px; font-size:.92rem; font-family:inherit; }
@@ -589,6 +591,7 @@ function recommendPoses(level, issues){
 // UI: HOME / NAVIGATION
 // ============================================================
 window.goToScreen = function(name){
+  if ("speechSynthesis" in window) window.speechSynthesis.cancel(); // don't keep talking after navigating away
   document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
   document.getElementById(name+"-screen").classList.add("active");
 };
@@ -819,12 +822,55 @@ window.saveSystemPrompt = async function(){
   }
 };
 
+let currentUtterance = null;
+
+function speakText(text, btn){
+  if (!("speechSynthesis" in window)) {
+    alert("Text-to-speech isn't supported in this browser.");
+    return;
+  }
+  // Only one message reads aloud at a time - stop whatever's playing first.
+  window.speechSynthesis.cancel();
+
+  // If this button was already the one speaking, cancel() above already
+  // stopped it - just reset its label and stop here (acts as a toggle).
+  if (btn.dataset.speaking === "true") {
+    resetReadAloudButtons();
+    return;
+  }
+  resetReadAloudButtons();
+
+  const utterance = new SpeechSynthesisUtterance(text);
+  currentUtterance = utterance;
+  btn.textContent = "⏹ Stop";
+  btn.dataset.speaking = "true";
+  utterance.onend = () => { btn.textContent = "🔊 Read Aloud"; btn.dataset.speaking = "false"; };
+  utterance.onerror = () => { btn.textContent = "🔊 Read Aloud"; btn.dataset.speaking = "false"; };
+  window.speechSynthesis.speak(utterance);
+}
+function resetReadAloudButtons(){
+  document.querySelectorAll(".read-aloud-btn").forEach(b => {
+    b.textContent = "🔊 Read Aloud";
+    b.dataset.speaking = "false";
+  });
+}
+
 function renderChatMessage(role, text){
   const win = document.getElementById("chat-window");
   const bubble = document.createElement("div");
   bubble.className = "chat-bubble " + (role==="user" ? "chat-user" : "chat-assistant");
   bubble.textContent = text;
   win.appendChild(bubble);
+
+  if (role === "assistant") {
+    const btn = document.createElement("button");
+    btn.className = "read-aloud-btn";
+    btn.textContent = "🔊 Read Aloud";
+    btn.dataset.speaking = "false";
+    btn.onclick = () => speakText(text, btn);
+    win.appendChild(btn);
+  }
+
   win.scrollTop = win.scrollHeight;
 }
 function renderChatError(text){
