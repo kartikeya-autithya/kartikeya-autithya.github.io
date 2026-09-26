@@ -691,8 +691,6 @@ async function ensureSyncBlob(){
   }
 }
 
-const KRIYAS_API_URL = WORKER_URL.replace("/api/chat", "/api/kriyas");
-
 async function loadKriyas(){
   // Local cache first, so the list isn't empty while we wait on the network
   try {
@@ -747,6 +745,7 @@ async function saveKriyasToStorage(){
 // "/api/chat" path on the end. This is a public URL, safe to hard-code
 // (it is NOT a secret - only the API key inside the Worker is secret).
 const WORKER_URL = "https://yoga-assistant-worker.yogai.workers.dev/api/chat";
+const KRIYAS_API_URL = WORKER_URL.replace("/api/chat", "/api/kriyas");
 
 const DEFAULT_SYSTEM_PROMPT = "You are a friendly, knowledgeable yoga and fitness assistant embedded in a yoga practice app. Help the user with questions about yoga poses, exercise form, and wellness, and with using this app. Keep answers concise and encouraging.";
 let chatHistory = [];
