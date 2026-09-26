@@ -186,7 +186,7 @@ const CREATOR_ANSWER =
       return jsonResponse({ reply: CREATOR_ANSWER }, 200, allowedOrigin);
     }
 
-    const safeAppContext = typeof appContext === "string" ? appContext.slice(0, 8000) : "";
+    const safeAppContext = typeof appContext === "string" ? appContext.slice(0, 30000) : "";
     const safeSpecialization = typeof systemPrompt === "string" ? systemPrompt.slice(0, 2000) : "";
 
     const contents = toGeminiContents(history, message);

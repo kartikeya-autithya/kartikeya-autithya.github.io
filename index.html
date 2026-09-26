@@ -766,15 +766,18 @@ function buildAppContext(){
   // Personal notes from "Learn More About Yoga" - title + text only,
   // never the embedded video/audio data (far too large to send).
   const kriyaLines = kriyaList.length > 0
-    ? kriyaList.map(k => `- ${k.title}: ${(k.text || "(no notes)").slice(0, 400)}`).join("\n")
+    ? kriyaList.map(k => `- ${k.title}: ${(k.text || "(no notes)").slice(0, 1500)}`).join("\n")
     : "(the user hasn't added any Yog Kriya notes yet)";
 
   return [
-    "ASANAS AVAILABLE IN THIS APP:", poseLines,
+    // The user's own Kriya notes come FIRST, so if the total ever has to
+    // be trimmed (see the Worker's safeAppContext cap), it's the static
+    // built-in app data that gets cut, never the user's own content.
+    "USER'S PERSONAL YOG KRIYA NOTES (from their own 'Learn More About Yoga' entries):", kriyaLines,
+    "", "ASANAS AVAILABLE IN THIS APP:", poseLines,
     "", "EXERCISE COUNTERS AVAILABLE IN THIS APP:", counterLines,
     "", "PRESET ROUTINES IN THIS APP:", routineLines,
     "", "CALORIE FORMULA USED BY THIS APP: calories = K x weight(kg) x reps (K listed per counter above).",
-    "", "USER'S PERSONAL YOG KRIYA NOTES (from their own 'Learn More About Yoga' entries):", kriyaLines,
   ].join("\n");
 }
 
