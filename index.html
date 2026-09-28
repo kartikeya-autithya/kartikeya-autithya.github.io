@@ -497,7 +497,49 @@ function getPoseMetrics(lm){
     left_wrist_below_shoulder: lm[15].y>=lm[11].y?1:0, right_wrist_below_shoulder: lm[16].y>=lm[12].y?1:0,
   };
 }
-function checkPose(metrics,ranges){ const results={}; for(const [joint,[lo,hi]] of Object.entries(ranges)){ const v=metrics[joint]??0; results[joint]=v>=lo&&v<=hi; } return {results, allCorrect:Object.values(results).every(Boolean)}; }
+
+// Which raw landmark indices feed into each computed metric - used to
+// find the weakest (least visible/confident) landmark behind a reading,
+// so a low-confidence joint (occluded, out of frame, etc.) doesn't get
+// silently treated as a trustworthy angle.
+const METRIC_LANDMARKS = {
+  left_knee:[23,25,27], right_knee:[24,26,28],
+  left_elbow:[11,13,15], right_elbow:[12,14,16],
+  left_hip:[11,23,25], right_hip:[12,24,26],
+  left_shoulder:[23,11,13], right_shoulder:[24,12,14],
+  left_hand_to_foot_dist:[15,27], right_hand_to_foot_dist:[16,28],
+  wrist_to_wrist_dist:[15,16], ankle_dist:[27,28],
+  right_ankle_to_left_knee_dist:[28,25], left_ankle_to_right_knee_dist:[27,26],
+  left_wrist_below_shoulder:[15,11], right_wrist_below_shoulder:[16,12],
+};
+const MIN_VISIBILITY = 0.5;
+
+function getMetricVisibility(lm){
+  const vis = {};
+  for(const [metric, indices] of Object.entries(METRIC_LANDMARKS)){
+    vis[metric] = Math.min(...indices.map(i => lm[i]?.visibility ?? 1));
+  }
+  return vis;
+}
+
+// results[joint] is true/false for a confident reading, or null when the
+// underlying landmark(s) are too low-confidence to trust - a null neither
+// counts for nor against allCorrect, so a momentarily-hidden joint won't
+// falsely reset a hold or falsely mark a pose correct.
+function checkPose(metrics, ranges, visibility){
+  const results = {};
+  for(const [joint,[lo,hi]] of Object.entries(ranges)){
+    if(visibility && (visibility[joint] ?? 1) < MIN_VISIBILITY){
+      results[joint] = null;
+      continue;
+    }
+    const v = metrics[joint] ?? 0;
+    results[joint] = v>=lo && v<=hi;
+  }
+  const known = Object.values(results).filter(r => r !== null);
+  const allCorrect = known.length > 0 && known.every(Boolean);
+  return {results, allCorrect};
+}
 
 const REF_TIPS = {
   "Tadasana (Mountain Pose)":"Stand tall, arms relaxed straight down at your sides.",
@@ -1297,7 +1339,7 @@ async function initLandmarker(){
   if(landmarker) return;
   const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");
   landmarker = await PoseLandmarker.createFromOptions(vision, {
-    baseOptions: { modelAssetPath:"https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task", delegate:"GPU" },
+    baseOptions: { modelAssetPath:"https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task", delegate:"GPU" },
     runningMode:"VIDEO", numPoses:1,
   });
 }
@@ -1461,7 +1503,8 @@ function loop(){
       }
     } else if(stepType==='hold'){
       const rules = POSE_LIBRARY[currentName];
-      const {results, allCorrect} = checkPose(metrics, rules.joint_ranges);
+      const visibility = getMetricVisibility(lm);
+      const {results, allCorrect} = checkPose(metrics, rules.joint_ranges, visibility);
       if(allCorrect){
         if(holdStartTime===null) holdStartTime=performance.now();
         elapsed = (performance.now()-holdStartTime)/1000;
@@ -1473,7 +1516,7 @@ function loop(){
 
       // --- Audio cue: name the single wrong joint type, or a general cue if several are wrong.
       // Only plays once the SAME wrongness has persisted for at least 1 full second. ---
-      const incorrectJoints = Object.keys(results).filter(j=>!results[j]);
+      const incorrectJoints = Object.keys(results).filter(j=>results[j]===false); // null = unseen, not "wrong"
       let cueKey = null;
       if(incorrectJoints.length===1){
         const j = incorrectJoints[0];
@@ -1499,15 +1542,23 @@ function loop(){
         }
       }
 
-      pill.textContent = allCorrect ? (performance.now()<flashUntil?"TARGET REACHED!":"POSE CORRECT") : "ADJUST POSE";
+      const nothingVisible = Object.values(results).every(r => r === null);
+      pill.textContent = nothingVisible
+        ? "Can't see you clearly - adjust camera/position"
+        : (allCorrect ? (performance.now()<flashUntil?"TARGET REACHED!":"POSE CORRECT") : "ADJUST POSE");
       pill.className = "status-pill "+(allCorrect?"status-correct":"status-adjust");
       document.getElementById("timer-display").textContent = `${elapsed.toFixed(1)}s / ${holdSecondsTarget}s`;
       metricList.innerHTML="";
       for(const joint of Object.keys(rules.joint_ranges)){
         const val = metrics[joint]??0; const ok = results[joint];
         const row=document.createElement("div"); row.className="metric-row";
-        const displayVal = joint.includes("dist") ? val.toFixed(2) : (joint.includes("below")?val:val.toFixed(0)+"°");
-        row.innerHTML = `<span>${joint}</span><span class="${ok?"metric-ok":"metric-bad"}">${displayVal} ${ok?"OK":"ADJUST"}</span>`;
+        if(ok === null){
+          // Low-confidence joint: don't show a number we can't trust.
+          row.innerHTML = `<span>${joint}</span><span style="color:var(--text-dim);">low visibility</span>`;
+        } else {
+          const displayVal = joint.includes("dist") ? val.toFixed(2) : (joint.includes("below")?val:val.toFixed(0)+"°");
+          row.innerHTML = `<span>${joint}</span><span class="${ok?"metric-ok":"metric-bad"}">${displayVal} ${ok?"OK":"ADJUST"}</span>`;
+        }
         metricList.appendChild(row);
       }
     }
