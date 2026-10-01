@@ -76,6 +76,16 @@
   .header-row { display:flex; justify-content:space-between; align-items:flex-start; }
   .settings-btn { background:#1e2434; border:1px solid var(--border); color:var(--text-dim); padding:8px 14px; font-size:0.85rem; }
   .settings-btn:hover { color:var(--accent); border-color:var(--accent); }
+  .auth-header-area { display:flex; gap:8px; align-items:center; }
+  .auth-btn { background:#1e2434; border:1px solid var(--border); color:var(--text-dim); padding:8px 14px; font-size:0.85rem; border-radius:8px; }
+  .auth-btn:hover { color:var(--accent); border-color:var(--accent); }
+  .auth-btn.primary { background:var(--accent); color:#10241a; border-color:var(--accent); }
+  .auth-tab-row { display:flex; gap:8px; margin-bottom:20px; }
+  .auth-tab-btn { flex:1; background:#1e2434; border:1px solid var(--border); color:var(--text-dim); padding:10px; border-radius:8px; font-weight:600; }
+  .auth-tab-btn.active { background:var(--accent); color:#10241a; border-color:var(--accent); }
+  .auth-input { width:100%; background:#1e2434; border:1px solid var(--border); color:var(--text); border-radius:8px; padding:10px 12px; font-size:0.92rem; font-family:inherit; margin-bottom:12px; }
+  .auth-error { color:var(--danger); font-size:.85rem; margin:4px 0 12px 0; min-height:1.2em; }
+  .auth-link { background:none; color:var(--accent); padding:4px 0; font-size:.85rem; text-decoration:underline; }
   .sync-code-box { display:flex; gap:8px; align-items:center; background:#1e2434; border:1px solid var(--border); border-radius:8px; padding:10px 12px; font-family:monospace; word-break:break-all; }
   .master-badge { font-size:.75rem; color:var(--accent); border:1px solid var(--accent); border-radius:10px; padding:2px 10px; }
 
@@ -108,7 +118,10 @@
   <h1>🧘 Yoga Practice</h1>
   <div class="header-row">
     <div class="subtitle" id="subtitle">What would you like to do?</div>
-    <button class="settings-btn" onclick="showSettings()">⚙️ Settings</button>
+    <div style="display:flex; gap:10px; align-items:center;">
+      <div class="auth-header-area" id="auth-header-area"></div>
+      <button class="settings-btn" onclick="showSettings()">⚙️ Settings</button>
+    </div>
   </div>
 
   <!-- SCREEN 0: HOME -->
@@ -196,6 +209,72 @@
           <button class="btn-primary" onclick="sendChatMessage()">Send</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- SCREEN: AUTH (Login / Sign Up / Forgot Password / Reset) -->
+  <div id="auth-screen" class="screen">
+    <div class="card">
+      <button class="back-link" onclick="goToScreen('home')">← Back</button>
+
+      <div class="auth-tab-row" id="auth-tab-row">
+        <button class="auth-tab-btn" id="auth-tab-login" onclick="switchAuthView('login')">Log In</button>
+        <button class="auth-tab-btn" id="auth-tab-signup" onclick="switchAuthView('signup')">Create Account</button>
+      </div>
+
+      <div id="auth-view-login">
+        <h2>Log In</h2>
+        <input type="email" id="login-email" class="auth-input" placeholder="Email" autocomplete="email">
+        <input type="password" id="login-password" class="auth-input" placeholder="Password" autocomplete="current-password">
+        <div class="auth-error" id="login-error"></div>
+        <button class="btn-primary" onclick="doLogin()" id="login-btn" style="width:100%;">Log In</button>
+        <button class="auth-link" onclick="switchAuthView('forgot')" style="margin-top:12px;">Forgot Password?</button>
+      </div>
+
+      <div id="auth-view-signup" style="display:none;">
+        <h2>Create Account</h2>
+        <input type="text" id="signup-name" class="auth-input" placeholder="Display name" autocomplete="nickname">
+        <input type="email" id="signup-email" class="auth-input" placeholder="Email" autocomplete="email">
+        <input type="password" id="signup-password" class="auth-input" placeholder="Password (min. 6 characters)" autocomplete="new-password">
+        <input type="password" id="signup-confirm" class="auth-input" placeholder="Confirm password" autocomplete="new-password">
+        <div class="auth-error" id="signup-error"></div>
+        <button class="btn-primary" onclick="doSignup()" id="signup-btn" style="width:100%;">Create Account</button>
+      </div>
+
+      <div id="auth-view-forgot" style="display:none;">
+        <h2>Reset Your Password</h2>
+        <p class="hint" style="margin-top:0;">Enter your email and we'll send a password reset link.</p>
+        <input type="email" id="forgot-email" class="auth-input" placeholder="Email" autocomplete="email">
+        <div class="auth-error" id="forgot-error"></div>
+        <button class="btn-primary" onclick="doForgotPassword()" id="forgot-btn" style="width:100%;">Send Reset Link</button>
+        <button class="auth-link" onclick="switchAuthView('login')" style="margin-top:12px;">← Back to Log In</button>
+      </div>
+
+      <div id="auth-view-recovery" style="display:none;">
+        <h2>Set a New Password</h2>
+        <p class="hint" style="margin-top:0;">You followed a password reset link - choose a new password below.</p>
+        <input type="password" id="recovery-password" class="auth-input" placeholder="New password (min. 6 characters)" autocomplete="new-password">
+        <input type="password" id="recovery-confirm" class="auth-input" placeholder="Confirm new password" autocomplete="new-password">
+        <div class="auth-error" id="recovery-error"></div>
+        <button class="btn-primary" onclick="doUpdatePassword()" id="recovery-btn" style="width:100%;">Update Password</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN: ACCOUNT -->
+  <div id="account-screen" class="screen">
+    <div class="card">
+      <button class="back-link" onclick="goToScreen('home')">← Back</button>
+      <h2>My Account</h2>
+      <div class="field-group">
+        <div class="form-label">Display name</div>
+        <div id="acct-name" style="margin-bottom:14px;">-</div>
+        <div class="form-label">Email</div>
+        <div id="acct-email" style="margin-bottom:14px; color:var(--text-dim);">-</div>
+        <div class="form-label">Member since</div>
+        <div id="acct-created" style="color:var(--text-dim);">-</div>
+      </div>
+      <button class="btn-danger" onclick="doLogout()">Log Out</button>
     </div>
   </div>
 
@@ -385,6 +464,231 @@
 
 <script type="module">
 import { PoseLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
+// Loaded via esm.sh, not jsDelivr's "+esm" transform - jsDelivr's ESM
+// build of supabase-js has a known runtime bug (broken nested default
+// imports) as of late 2025; esm.sh doesn't have this problem.
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+// ============================================================
+// SUPABASE AUTH - real user accounts (signup/login/logout/session
+// persistence/password reset), entirely client-side. Deliberately
+// placed at the very top of the module, right after imports, so
+// nothing declared later can ever be referenced before this runs -
+// see the WORKER_URL ordering bug from earlier for why this matters.
+//
+// EDIT THESE TWO before deploying (see setup steps):
+//   SUPABASE_URL              - Settings > API in your Supabase project
+//   SUPABASE_PUBLISHABLE_KEY  - the sb_publishable_... key (safe for
+//                                frontend code). NEVER put the
+//                                sb_secret_... key here or anywhere
+//                                in this file.
+// =========================================================
+const SUPABASE_URL = "https://dkptupmgebwaoujmwmcq.supabase.co/rest/v1/";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_iOmXS1j6_xoZGMWlWZPk1g_7eYG1Jn1";
+const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+let authUser = null;      // Supabase auth user object, or null when logged out
+let authProfile = null;   // row from public.profiles for the current user
+let authView = "login";   // which auth-screen sub-view is showing
+
+function friendlyAuthError(error){
+  const msg = (error && error.message) || "Something went wrong. Please try again.";
+  if (/already registered/i.test(msg)) return "An account with that email already exists - try logging in instead.";
+  if (/invalid login credentials/i.test(msg)) return "Incorrect email or password.";
+  if (/password should be at least/i.test(msg)) return "Password must be at least 6 characters.";
+  if (/unable to validate email|invalid email/i.test(msg)) return "That doesn't look like a valid email address.";
+  if (/email not confirmed/i.test(msg)) return "Please confirm your email before logging in (check your inbox).";
+  if (/rate limit/i.test(msg)) return "Too many attempts - please wait a few minutes and try again.";
+  return msg;
+}
+
+function renderAuthHeader(){
+  const el = document.getElementById("auth-header-area");
+  if (!el) return;
+  if (authUser) {
+    const name = (authProfile && authProfile.display_name) || authUser.email;
+    el.innerHTML =
+      '<button class="auth-btn" onclick="showAccountScreen()">👤 ' + escapeHtml(name) + '</button>' +
+      '<button class="auth-btn" onclick="doLogout()">Logout</button>';
+  } else {
+    el.innerHTML =
+      '<button class="auth-btn" onclick="showAuthScreen(\'login\')">Log In</button>' +
+      '<button class="auth-btn primary" onclick="showAuthScreen(\'signup\')">Sign Up</button>';
+  }
+}
+
+window.showAuthScreen = function(view){
+  switchAuthView(view);
+  goToScreen("auth");
+};
+
+window.switchAuthView = function(view){
+  authView = view;
+  document.getElementById("auth-view-login").style.display = view==="login" ? "block":"none";
+  document.getElementById("auth-view-signup").style.display = view==="signup" ? "block":"none";
+  document.getElementById("auth-view-forgot").style.display = view==="forgot" ? "block":"none";
+  document.getElementById("auth-view-recovery").style.display = view==="recovery" ? "block":"none";
+  document.getElementById("auth-tab-row").style.display = (view==="login"||view==="signup") ? "flex":"none";
+  document.getElementById("auth-tab-login").classList.toggle("active", view==="login");
+  document.getElementById("auth-tab-signup").classList.toggle("active", view==="signup");
+  ["login-error","signup-error","forgot-error","recovery-error"].forEach(id=>{
+    const e=document.getElementById(id); if(e){ e.textContent=""; e.style.color=""; }
+  });
+};
+
+window.doSignup = async function(){
+  const name = document.getElementById("signup-name").value.trim();
+  const email = document.getElementById("signup-email").value.trim();
+  const password = document.getElementById("signup-password").value;
+  const confirm = document.getElementById("signup-confirm").value;
+  const errEl = document.getElementById("signup-error");
+  errEl.textContent = ""; errEl.style.color = "";
+
+  if (!name) { errEl.textContent = "Please enter a display name."; return; }
+  if (!email) { errEl.textContent = "Please enter your email."; return; }
+  if (password.length < 6) { errEl.textContent = "Password must be at least 6 characters."; return; }
+  if (password !== confirm) { errEl.textContent = "Passwords don't match."; return; }
+
+  const btn = document.getElementById("signup-btn");
+  btn.disabled = true; btn.textContent = "Creating account...";
+  try {
+    const { data, error } = await sb.auth.signUp({
+      email, password,
+      options: { data: { display_name: name } },
+    });
+    if (error) { errEl.textContent = friendlyAuthError(error); return; }
+    if (data.user && !data.session) {
+      errEl.style.color = "var(--accent)";
+      errEl.textContent = "Account created! Check your email to confirm before logging in.";
+      switchAuthView("login");
+    }
+    // If data.session exists (email confirmation off), onAuthStateChange
+    // below picks it up automatically and updates the header/UI.
+  } catch(e) {
+    errEl.textContent = "Could not reach the server. Check your connection and try again.";
+  } finally {
+    btn.disabled = false; btn.textContent = "Create Account";
+  }
+};
+
+window.doLogin = async function(){
+  const email = document.getElementById("login-email").value.trim();
+  const password = document.getElementById("login-password").value;
+  const errEl = document.getElementById("login-error");
+  errEl.textContent = "";
+  if (!email || !password) { errEl.textContent = "Please enter your email and password."; return; }
+
+  const btn = document.getElementById("login-btn");
+  btn.disabled = true; btn.textContent = "Logging in...";
+  try {
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) { errEl.textContent = friendlyAuthError(error); return; }
+    goToScreen("home");
+  } catch(e) {
+    errEl.textContent = "Could not reach the server. Check your connection and try again.";
+  } finally {
+    btn.disabled = false; btn.textContent = "Log In";
+  }
+};
+
+window.doForgotPassword = async function(){
+  const email = document.getElementById("forgot-email").value.trim();
+  const errEl = document.getElementById("forgot-error");
+  errEl.textContent = ""; errEl.style.color = "";
+  if (!email) { errEl.textContent = "Please enter your email."; return; }
+
+  const btn = document.getElementById("forgot-btn");
+  btn.disabled = true; btn.textContent = "Sending...";
+  try {
+    const { error } = await sb.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + window.location.pathname,
+    });
+    if (error) { errEl.textContent = friendlyAuthError(error); return; }
+    errEl.style.color = "var(--accent)";
+    errEl.textContent = "If an account exists for that email, a reset link is on its way.";
+  } catch(e) {
+    errEl.textContent = "Could not reach the server. Check your connection and try again.";
+  } finally {
+    btn.disabled = false; btn.textContent = "Send Reset Link";
+  }
+};
+
+window.doUpdatePassword = async function(){
+  const password = document.getElementById("recovery-password").value;
+  const confirm = document.getElementById("recovery-confirm").value;
+  const errEl = document.getElementById("recovery-error");
+  errEl.textContent = "";
+  if (password.length < 6) { errEl.textContent = "Password must be at least 6 characters."; return; }
+  if (password !== confirm) { errEl.textContent = "Passwords don't match."; return; }
+
+  const btn = document.getElementById("recovery-btn");
+  btn.disabled = true; btn.textContent = "Updating...";
+  try {
+    const { error } = await sb.auth.updateUser({ password });
+    if (error) { errEl.textContent = friendlyAuthError(error); return; }
+    alert("Password updated! You're now logged in.");
+    goToScreen("home");
+  } catch(e) {
+    errEl.textContent = "Could not reach the server. Check your connection and try again.";
+  } finally {
+    btn.disabled = false; btn.textContent = "Update Password";
+  }
+};
+
+window.doLogout = async function(){
+  try { await sb.auth.signOut(); } catch(e) {}
+  authUser = null; authProfile = null;
+  renderAuthHeader();
+  goToScreen("home");
+};
+
+async function loadProfile(){
+  if (!authUser) { authProfile = null; return; }
+  try {
+    const { data, error } = await sb.from("profiles").select("*").eq("id", authUser.id).single();
+    if (!error) authProfile = data;
+  } catch(e) {
+    console.warn("Could not load profile", e);
+  }
+}
+
+window.showAccountScreen = async function(){
+  goToScreen("account");
+  if (!authProfile) await loadProfile();
+  document.getElementById("acct-name").textContent = (authProfile && authProfile.display_name) || "-";
+  document.getElementById("acct-email").textContent = (authUser && authUser.email) || "-";
+  document.getElementById("acct-created").textContent =
+    (authProfile && authProfile.created_at) ? new Date(authProfile.created_at).toLocaleDateString() : "-";
+};
+
+// Initial session check + live auth-state changes. Wrapped in an async
+// IIFE (not top-level await) so a misconfigured/unreachable Supabase
+// project can NEVER throw a synchronous error that blocks the rest of
+// the page - worst case, the user just stays logged out.
+(async () => {
+  try {
+    const { data } = await sb.auth.getSession();
+    if (data.session) {
+      authUser = data.session.user;
+      await loadProfile();
+      renderAuthHeader();
+    }
+  } catch(e) {
+    console.warn("Supabase session check failed (is SUPABASE_URL/KEY set?)", e);
+  }
+
+  try {
+    sb.auth.onAuthStateChange(async (event, session) => {
+      if (event === "PASSWORD_RECOVERY") { showAuthScreen("recovery"); return; }
+      authUser = session ? session.user : null;
+      if (authUser) await loadProfile(); else authProfile = null;
+      renderAuthHeader();
+    });
+  } catch(e) {
+    console.warn("Supabase auth listener could not start", e);
+  }
+})();
+
 
 // ============================================================
 // POSE LIBRARY (hold poses)
