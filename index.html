@@ -86,6 +86,14 @@
   .auth-input { width:100%; background:#1e2434; border:1px solid var(--border); color:var(--text); border-radius:8px; padding:10px 12px; font-size:0.92rem; font-family:inherit; margin-bottom:12px; }
   .auth-error { color:var(--danger); font-size:.85rem; margin:4px 0 12px 0; min-height:1.2em; }
   .auth-link { background:none; color:var(--accent); padding:4px 0; font-size:.85rem; text-decoration:underline; }
+  .select-input { width:100%; background:#1e2434; border:1px solid var(--border); color:var(--text); border-radius:8px; padding:10px 12px; font-size:0.92rem; font-family:inherit; }
+  .avoided-row { display:flex; justify-content:space-between; align-items:center; background:#1e2434; border:1px solid var(--border); border-radius:8px; padding:10px 14px; margin-bottom:8px; }
+  .pain-panel { text-align:center; }
+  .pain-panel button.btn-danger { width:100%; }
+  .doctor-warning { background:#3a2323; border:2px solid var(--danger); border-radius:10px; padding:20px; text-align:center; margin-top:14px; }
+  .doctor-warning h3 { color:var(--danger); font-size:1.3rem; margin:0 0 10px 0; }
+  .profile-summary-row { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #2a3145; font-size:.9rem; }
+  .profile-summary-row span:first-child { color:var(--text-dim); }
   .sync-code-box { display:flex; gap:8px; align-items:center; background:#1e2434; border:1px solid var(--border); border-radius:8px; padding:10px 12px; font-family:monospace; word-break:break-all; }
   .master-badge { font-size:.75rem; color:var(--accent); border:1px solid var(--accent); border-radius:10px; padding:2px 10px; }
 
@@ -111,6 +119,76 @@
   video.kriya-media, audio.kriya-media { width:100%; margin:14px 0; border-radius:10px; }
   .empty-state { color:var(--text-dim); font-size:.9rem; padding:20px 0; text-align:center; }
   .storage-warning { font-size:.8rem; color:#ffb74d; margin-top:10px; }
+
+  /* ===== Phase 1: dashboard, progress, history, favorites, summary ===== */
+  .guest-banner { display:none; background:#1e2434; border:1px solid var(--border); border-radius:12px; padding:14px 18px; margin-bottom:18px; font-size:.9rem; color:var(--text-dim); }
+  #home-dashboard { display:none; }
+  .dash-hero { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:18px; }
+  .dash-greet { font-size:1.5rem; font-weight:700; }
+  .dash-sub { color:var(--text-dim); font-size:.92rem; margin-top:4px; }
+  .streak-chip { background:#2b2a24; border:1px solid #5a4a2a; color:#ffb74d; border-radius:14px; padding:10px 16px; text-align:center; font-weight:700; font-size:1.4rem; line-height:1.1; white-space:nowrap; }
+  .streak-chip small { display:block; font-size:.72rem; font-weight:500; color:var(--text-dim); margin-top:2px; }
+  .dash-grid { display:grid; grid-template-columns:1.35fr 1fr; gap:16px; margin-bottom:16px; }
+  .dash-grid-even { grid-template-columns:1fr 1fr; }
+  .dash-card { background:#1e2434; border:1px solid var(--border); border-radius:14px; padding:20px; min-width:0; }
+  .dash-card h3 { margin:0 0 12px 0; }
+  .today-card { border-color:#3f6b52; background:linear-gradient(160deg,#1f3029,#1e2434 62%); }
+  .today-meta { font-size:1.35rem; font-weight:700; margin:2px 0 6px 0; }
+  .today-why { font-size:.8rem; color:var(--text-dim); margin-top:8px; line-height:1.45; }
+  .plan-details { margin-top:14px; font-size:.88rem; }
+  .plan-details summary { cursor:pointer; color:var(--accent); font-weight:600; }
+  .stat-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+  .stat-grid-3 { grid-template-columns:repeat(3,1fr); margin-bottom:12px; }
+  .stat-tile { background:#161b28; border:1px solid var(--border); border-radius:10px; padding:12px; text-align:left; }
+  .stat-val { font-size:1.4rem; font-weight:700; }
+  .stat-lbl { font-size:.75rem; color:var(--text-dim); margin-top:2px; }
+  .quick-row { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px; }
+  .sess-row { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid #2a3145; font-size:.9rem; }
+  .sess-row .tag { font-size:.75rem; color:var(--text-dim); font-weight:400; }
+  .badge { font-size:.7rem; border-radius:10px; padding:2px 8px; border:1px solid; white-space:nowrap; font-weight:600; }
+  .badge-ok { color:var(--accent); border-color:var(--accent); }
+  .badge-part { color:#ffb74d; border-color:#ffb74d; }
+  .fav-row { display:flex; gap:8px; align-items:stretch; }
+  .fav-row .pose-btn { flex:1; min-width:0; }
+  .pose-list .fav-row { margin:0; }
+  .fav-btn { background:#1e2434; border:1px solid var(--border); color:var(--text-dim); padding:6px 12px; border-radius:8px; font-size:1.05rem; line-height:1; }
+  .fav-btn.on { color:#ff8fa3; border-color:#ff8fa3; }
+  .fav-btn:focus-visible, .pose-btn:focus-visible, button:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  .kriya-card .fav-btn { margin-left:10px; }
+  .title-row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:6px; }
+  .title-row h2 { margin:0; }
+  .ach-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:10px; }
+  .ach { background:#161b28; border:1px solid var(--border); border-radius:10px; padding:12px; display:flex; gap:10px; align-items:center; text-align:left; }
+  .ach.locked { opacity:.45; filter:grayscale(1); }
+  .ach .ico { font-size:1.5rem; }
+  .ach-title { font-weight:600; font-size:.9rem; }
+  .ach.fresh { border-color:var(--accent); animation:achPop .7s ease-out both; margin-top:10px; }
+  @keyframes achPop { 0%{ transform:scale(.88); opacity:0; } 60%{ transform:scale(1.03); opacity:1; } 100%{ transform:scale(1); } }
+  .hist-item { background:#1e2434; border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:10px; }
+  .hist-item summary { display:flex; justify-content:space-between; align-items:center; gap:10px; cursor:pointer; list-style:none; }
+  .hist-item summary::-webkit-details-marker { display:none; }
+  .hist-item .tag { font-size:.75rem; color:var(--text-dim); font-weight:400; margin-top:3px; }
+  .hist-detail { margin-top:10px; }
+  .sum-card { text-align:center; max-width:640px; margin:0 auto; }
+  .sum-kicker { font-size:.95rem; letter-spacing:.06em; color:var(--accent); font-weight:700; }
+  .sum-time { font-size:3rem; font-weight:700; margin:6px 0 2px 0; }
+  .sum-sub { color:var(--text-dim); }
+  .sum-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; margin:18px 0 8px 0; }
+  .sum-save { margin-top:14px; font-size:.9rem; color:var(--text-dim); }
+  .sum-actions { justify-content:center; }
+  .toast { position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:#2e3650; border:1px solid var(--border); color:var(--text); padding:10px 18px; border-radius:10px; z-index:50; font-size:.88rem; opacity:0; pointer-events:none; transition:opacity .2s; max-width:90vw; text-align:center; }
+  .toast.show { opacity:1; }
+  .header-row { flex-wrap:wrap; gap:10px; }
+  @media (max-width:760px) {
+    body { padding:14px; }
+    .dash-grid, .dash-grid-even { grid-template-columns:1fr; }
+    .dash-hero { align-items:flex-start; }
+    .dash-greet { font-size:1.25rem; }
+    .stat-grid-3 { grid-template-columns:repeat(2,1fr); }
+    .sum-time { font-size:2.4rem; }
+    .right-panel { min-width:0; width:100%; }
+  }
+  @media (prefers-reduced-motion:reduce) { .ach.fresh { animation:none; } .toast { transition:none; } }
 </style>
 </head>
 <body>
@@ -126,6 +204,9 @@
 
   <!-- SCREEN 0: HOME -->
   <div id="home-screen" class="screen active">
+    <div id="home-guest-banner" class="guest-banner">Log in to track your practice, streaks and favorites - everything below still works without an account. <button class="auth-link" onclick="showAuthScreen('signup')">Create a free account</button></div>
+    <div id="home-dashboard"></div>
+    <div class="section-label" id="home-explore-label" style="display:none;">Explore YogaAI</div>
     <div class="home-grid">
       <div class="home-card" onclick="playSound('preLoadedWorkouts'); goToScreen('routines')">
         <span class="emoji">📿</span>
@@ -274,7 +355,67 @@
         <div class="form-label">Member since</div>
         <div id="acct-created" style="color:var(--text-dim);">-</div>
       </div>
+
+      <div class="section-label">Your Yoga Profile</div>
+      <div class="panel-box" style="margin-bottom:18px;">
+        <div class="profile-summary-row"><span>Yoga Level</span><span id="prof-level">-</span></div>
+        <div class="profile-summary-row"><span>Goals</span><span id="prof-goals">-</span></div>
+        <div class="profile-summary-row"><span>Difficulty</span><span id="prof-difficulty">-</span></div>
+        <div class="profile-summary-row"><span>Session Duration</span><span id="prof-duration">-</span></div>
+        <div class="profile-summary-row"><span>Asana Hold Time</span><span id="prof-hold">-</span></div>
+        <div class="profile-summary-row"><span>Exercise Rep Limit</span><span id="prof-reps">-</span></div>
+        <div class="profile-summary-row"><span>Pain/Discomfort</span><span id="prof-pain">-</span></div>
+      </div>
+      <button class="btn-secondary" onclick="showPersonalizeScreen(false)" style="margin-bottom:18px;">Edit Preferences</button>
+
+      <div class="section-label">Avoided Exercises</div>
+      <div id="avoided-list" style="margin-bottom:10px;"></div>
+      <button class="btn-secondary" onclick="clearAllAvoided()" style="margin-bottom:18px;">Clear All</button>
+
+      <div class="section-label">Your practice</div>
+      <div class="nav-row" style="margin-top:0;margin-bottom:22px;">
+        <button class="btn-secondary" onclick="showProgressScreen()">My Progress</button>
+        <button class="btn-secondary" onclick="showHistoryScreen()">Practice History</button>
+        <button class="btn-secondary" onclick="showFavoritesScreen()">My Favorites</button>
+      </div>
+
       <button class="btn-danger" onclick="doLogout()">Log Out</button>
+    </div>
+  </div>
+
+  <!-- SCREEN: PERSONALIZE -->
+  <div id="personalize-screen" class="screen">
+    <div class="card">
+      <button class="back-link" id="personalize-back-link" onclick="goToScreen('account')">← Back</button>
+      <h2 id="personalize-heading">Personalize Your Practice</h2>
+      <p class="hint" id="personalize-intro" style="margin-top:0;">Set this up once and YogaAI will remember it every time you log in.</p>
+
+      <h3>Yoga Experience Level</h3>
+      <div class="radio-row" id="personalize-level-row" style="margin-bottom:20px;"></div>
+
+      <h3>Main Goals (pick any)</h3>
+      <div class="checkbox-grid" id="personalize-goals-grid" style="margin-bottom:20px;"></div>
+
+      <h3>Preferred Difficulty</h3>
+      <div class="radio-row" id="personalize-difficulty-row" style="margin-bottom:20px;"></div>
+
+      <h3>Preferred Session Duration</h3>
+      <select class="select-input" id="personalize-duration" style="margin-bottom:20px;"></select>
+
+      <h3>Default Asana Hold Time</h3>
+      <select class="select-input" id="personalize-hold" style="margin-bottom:20px;"></select>
+
+      <h3>Default Exercise Rep Limit</h3>
+      <select class="select-input" id="personalize-reps" style="margin-bottom:20px;"></select>
+
+      <h3>Areas of Pain/Discomfort (optional)</h3>
+      <div class="checkbox-grid" id="personalize-pain-grid" style="margin-bottom:10px;"></div>
+
+      <div class="auth-error" id="personalize-error"></div>
+      <div class="nav-row">
+        <button class="btn-primary" onclick="savePersonalization()">Save Preferences</button>
+        <button class="btn-secondary" id="personalize-skip-btn" onclick="goToScreen('home')" style="display:none;">Skip for now</button>
+      </div>
     </div>
   </div>
 
@@ -402,7 +543,7 @@
   <div id="learn-detail-screen" class="screen">
     <div class="card">
       <button class="back-link" onclick="goToScreen('learn')">← Back</button>
-      <h2 id="detail-title">-</h2>
+      <div class="title-row"><h2 id="detail-title">-</h2><button type="button" class="fav-btn" id="detail-fav" data-kind="kriya" data-key="" title="Favorite" aria-label="Favorite this Kriya">♡</button></div>
       <div id="detail-media-wrap"></div>
       <div id="detail-text" class="kriya-detail-text"></div>
       <div class="nav-row">
@@ -412,11 +553,56 @@
     </div>
   </div>
 
+  <!-- SCREEN: PROGRESS -->
+  <div id="progress-screen" class="screen">
+    <div class="card">
+      <button class="back-link" onclick="goToScreen('home')">← Back</button>
+      <h2>My Progress</h2>
+      <div id="progress-body"></div>
+    </div>
+  </div>
+
+  <!-- SCREEN: PRACTICE HISTORY -->
+  <div id="history-screen" class="screen">
+    <div class="card">
+      <button class="back-link" onclick="goToScreen('home')">← Back</button>
+      <h2>My Practice History</h2>
+      <div id="history-body"></div>
+    </div>
+  </div>
+
+  <!-- SCREEN: FAVORITES -->
+  <div id="favorites-screen" class="screen">
+    <div class="card">
+      <button class="back-link" onclick="goToScreen('home')">← Back</button>
+      <h2>My Favorites</h2>
+      <div id="favorites-body"></div>
+    </div>
+  </div>
+
+  <!-- SCREEN: END-OF-SESSION SUMMARY -->
+  <div id="summary-screen" class="screen">
+    <div class="card sum-card">
+      <div class="sum-kicker" id="sum-kicker"></div>
+      <div class="sum-time" id="sum-time"></div>
+      <div class="sum-sub" id="sum-sub"></div>
+      <div class="sum-stats" id="sum-stats"></div>
+      <div id="sum-notes"></div>
+      <div id="sum-ach"></div>
+      <div class="sum-save" id="sum-save"></div>
+      <div class="nav-row sum-actions">
+        <button class="btn-primary" data-act="sumProgress">View progress</button>
+        <button class="btn-secondary" data-act="sumAgain">Practice again</button>
+        <button class="btn-secondary" data-act="sumHome">Back home</button>
+      </div>
+    </div>
+  </div>
+
   <!-- SCREEN: PRACTICE -->
   <div id="practice-screen" class="screen">
     <div class="card">
       <div id="step-progress" class="step-progress" style="display:none;"></div>
-      <h2 id="practice-title">Practicing: -</h2>
+      <div class="title-row"><h2 id="practice-title">Practicing: -</h2><button type="button" class="fav-btn" id="practice-fav" data-kind="asana" data-key="" title="Favorite" aria-label="Favorite this exercise">♡</button></div>
       <div class="tip-text" id="practice-tip"></div>
       <div class="practice-layout">
         <div class="video-wrap">
@@ -443,6 +629,14 @@
               <span class="timer-display" id="timed-display">-</span>
             </div>
             <div class="metric-list" id="metric-list" style="margin-top:12px;"></div>
+          </div>
+          <div class="panel-box pain-panel" id="pain-panel">
+            <div id="pain-prompt">
+              <div class="form-label" style="margin-bottom:10px;">Is this painful for you?</div>
+              <button class="btn-danger" onclick="reportPain()">Yes</button>
+            </div>
+            <div id="pain-message" style="display:none;"></div>
+            <div id="pain-doctor-warning" style="display:none;"></div>
           </div>
           <div class="panel-box" id="switch-panel">
             <h3>Switch asana / exercise</h3>
@@ -482,7 +676,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 //                                frontend code). NEVER put the
 //                                sb_secret_... key here or anywhere
 //                                in this file.
-// =========================================================
+// ============================================================
 const SUPABASE_URL = "https://dkptupmgebwaoujmwmcq.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_iOmXS1j6_xoZGMWlWZPk1g_7eYG1Jn1";
 const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
@@ -490,6 +684,232 @@ const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 let authUser = null;      // Supabase auth user object, or null when logged out
 let authProfile = null;   // row from public.profiles for the current user
 let authView = "login";   // which auth-screen sub-view is showing
+
+// ============================================================
+// PHASE 1 - STATE + PURE LOGIC (history, streaks, achievements,
+// favorites, Today's Practice planner).
+// Declared right after the auth state so nothing can be touched
+// before initialization. Pure functions only read the existing
+// libraries (POSE_LIBRARY, DIFFICULTY, POSE_GOALS, ...) at CALL time.
+// ============================================================
+function newUserData(){
+  return { uid:null, loaded:false, loading:false, available:true, errorMsg:"",
+           sessions:[], favorites:new Set(), favoriteRows:[], achievements:new Map() };
+}
+let userData = newUserData();   // cached per-login: sessions (newest first), favorites, achievements
+let rec = null;                 // active session recorder (null when no practice is running)
+let lastSummary = null;         // what the end-of-session screen is showing
+let lastLaunch = null;          // how to "Practice Again"
+let todayPlanCache = null;
+let historyShown = 20;
+
+/*P1-PURE-START*/
+const STREAK_MIN_FREE_SECONDS = 120;   // free/calorie sessions need >= 2 min AND a finished target to count for the streak
+const SEC_OVERHEAD = 10;               // setup/transition seconds assumed per exercise when estimating plan length
+const SEQUENCE_TYPES = ["preset_routine","custom_routine","daily_plan"];
+function isSequenceType(t){ return SEQUENCE_TYPES.includes(t); }
+
+function safeTz(){ try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch(e){ return "UTC"; } }
+
+// YYYY-MM-DD for `date` as seen in IANA timezone `tz`.
+function localDateStr(date, tz){
+  let parts;
+  try { parts = new Intl.DateTimeFormat("en-US",{ timeZone: tz || undefined, year:"numeric", month:"2-digit", day:"2-digit" }).formatToParts(date); }
+  catch(e){ parts = new Intl.DateTimeFormat("en-US",{ year:"numeric", month:"2-digit", day:"2-digit" }).formatToParts(date); }
+  const g = t => parts.find(p=>p.type===t).value;
+  return g("year")+"-"+g("month")+"-"+g("day");
+}
+function dayNum(str){ const [y,m,d] = str.split("-").map(Number); return Math.round(Date.UTC(y, m-1, d) / 86400000); }
+function todayStr(){ return localDateStr(new Date(), safeTz()); }
+
+// Streak rules: one or more qualifying sessions on a calendar day count that day once.
+// The current streak stays alive through today (you still have today to practice) and
+// breaks only after a whole calendar day with no qualifying session. Opening the app never counts.
+function computeStreaks(dateStrs, today){
+  const days = Array.from(new Set(dateStrs)).map(dayNum).sort((a,b)=>a-b);
+  let longest = 0, run = 0, prev = null;
+  for(const d of days){ run = (prev !== null && d === prev + 1) ? run + 1 : 1; if(run > longest) longest = run; prev = d; }
+  const set = new Set(days); const t = dayNum(today);
+  let cursor = set.has(t) ? t : (set.has(t-1) ? t-1 : null);
+  let current = 0;
+  while(cursor !== null && set.has(cursor)){ current++; cursor--; }
+  return { current, longest, practicedToday: set.has(t) };
+}
+
+function computeStats(sessions, today){
+  const streak = computeStreaks(sessions.filter(s=>s.counts_for_streak).map(s=>s.local_date), today);
+  const st = { sessions:sessions.length, completeSessions:0, partialSessions:0, totalSeconds:0, totalReps:0,
+    posesPracticed:0, uniquePoses:0, exercisesCompleted:0, routinesCompleted:0,
+    currentStreak:streak.current, longestStreak:streak.longest, practicedToday:streak.practicedToday,
+    routineNames:new Set(), poseCounts:{}, routineCounts:{} };
+  const unique = new Set();
+  for(const s of sessions){
+    if(s.completion_status === "complete") st.completeSessions++; else st.partialSessions++;
+    st.totalSeconds += s.duration_seconds || 0;
+    st.totalReps += s.total_reps || 0;
+    for(const e of (Array.isArray(s.completed_exercises) ? s.completed_exercises : [])){
+      if(!e || e.status !== "completed") continue;
+      if(e.kind === "asana"){ st.posesPracticed++; unique.add(e.name); st.poseCounts[e.name] = (st.poseCounts[e.name]||0) + 1; }
+      else st.exercisesCompleted++;
+    }
+    if(s.completion_status === "complete" && isSequenceType(s.session_type)){
+      st.routinesCompleted++;
+      if(s.routine_name){ st.routineNames.add(s.routine_name); st.routineCounts[s.routine_name] = (st.routineCounts[s.routine_name]||0) + 1; }
+    }
+  }
+  st.uniquePoses = unique.size;
+  return st;
+}
+function topEntries(counts, n){
+  return Object.entries(counts).sort((a,b)=> b[1]-a[1] || (a[0] < b[0] ? -1 : 1)).slice(0, n);
+}
+
+// Definitions live in code; only the unlock time is stored (user_achievements).
+const ACHIEVEMENTS = [
+  { key:"first_practice",   icon:"🌱", title:"First Practice",   desc:"Complete your first session",              test:s=>s.completeSessions >= 1 },
+  { key:"consistency_10",   icon:"🎯", title:"Consistency",      desc:"Complete 10 sessions",                     test:s=>s.completeSessions >= 10 },
+  { key:"streak_7",         icon:"🔥", title:"7-Day Yogi",       desc:"Practice on 7 consecutive days",           test:s=>s.longestStreak >= 7 },
+  { key:"pose_explorer",    icon:"🧘", title:"Pose Explorer",    desc:"Complete 20 different poses",              test:s=>s.uniquePoses >= 20 },
+  { key:"sun_salutation",   icon:"☀️", title:"Sun Salutation",   desc:"Complete Surya Namaskara",                 test:s=>s.routineNames.has("Surya Namaskara (Sun Salutation)") },
+  { key:"moon_salutation",  icon:"🌙", title:"Moon Salutation",  desc:"Complete Chandra Namaskar",                test:s=>s.routineNames.has("Chandra Namaskar (Moon Salutation)") },
+  { key:"tibetan_rites",    icon:"🌀", title:"Five Rites",       desc:"Complete the Five Tibetan Rites",          test:s=>s.routineNames.has("Five Tibetan Rites") },
+];
+
+function cap(s){ s = String(s||""); return s ? s[0].toUpperCase()+s.slice(1) : s; }
+function fmtClock(sec){
+  sec = Math.max(0, Math.round(sec)); const h = Math.floor(sec/3600), m = Math.floor((sec%3600)/60), s = sec%60;
+  const p = n => String(n).padStart(2,"0");
+  return h > 0 ? h+":"+p(m)+":"+p(s) : p(m)+":"+p(s);
+}
+function fmtTotal(sec){
+  sec = Math.max(0, Math.round(sec));
+  if(sec < 60) return sec + "s";
+  const h = Math.floor(sec/3600), m = Math.floor((sec%3600)/60);
+  return h > 0 ? h+"h "+m+"m" : m+"m";
+}
+function relDay(localDate, today){
+  const diff = dayNum(today) - dayNum(localDate);
+  if(diff === 0) return "Today";
+  if(diff === 1) return "Yesterday";
+  const [y,m,d] = localDate.split("-").map(Number);
+  return new Date(y, m-1, d).toLocaleDateString(undefined, { month:"short", day:"numeric" });
+}
+
+// ---------- Today's Practice planner (deterministic, ranked) ----------
+function normGoals(profile){ return ((profile && profile.goals) || []).map(g=>String(g).toLowerCase()).filter(g=>g && g !== "other"); }
+function levelOf(profile){ return (profile && LEVEL_ORDER.includes(profile.yoga_level)) ? profile.yoga_level : "beginner"; }
+function preferredTier(profile){
+  const lvl = LEVEL_ORDER.indexOf(levelOf(profile));
+  const d = String((profile && profile.preferred_difficulty) || "moderate").toLowerCase();
+  if(d === "easy") return 0;
+  if(d === "challenging") return lvl;
+  return Math.min(lvl, 1);
+}
+// Same exclusion rules the pain/alternative engine uses: level ceiling + pain-area map + avoided list.
+function exclusionSets(profile, avoidedSet){
+  const painAvoid = new Set();
+  ((profile && profile.pain_areas) || []).forEach(area=>{
+    const issue = PAIN_AREA_TO_ISSUE[area];
+    if(issue) (ISSUE_AVOID_MAP[issue] || []).forEach(x=>painAvoid.add(x));
+  });
+  const allowed = new Set(LEVEL_ORDER.slice(0, LEVEL_ORDER.indexOf(levelOf(profile)) + 1));
+  return { painAvoid, allowed, avoided: avoidedSet || new Set() };
+}
+function isEligible(name, ex){ return ex.allowed.has(DIFFICULTY[name]) && !ex.painAvoid.has(name) && !ex.avoided.has(name); }
+
+// Left/Right variants are one unit so a plan never contains half of a pair.
+function exerciseUnits(){
+  const names = [...ALL_POSES, ...ALL_COUNTERS], seen = new Set(), units = [];
+  for(const n of names){
+    if(seen.has(n)) continue;
+    const other = n.includes("(Right ") ? n.replace("(Right ","(Left ") : (n.includes("(Left ") ? n.replace("(Left ","(Right ") : null);
+    if(other && names.includes(other)){
+      const pair = n.includes("(Right ") ? [n, other] : [other, n];
+      pair.forEach(x=>seen.add(x)); units.push(pair);
+    } else { seen.add(n); units.push([n]); }
+  }
+  return units;
+}
+function hash01(str){ let h = 2166136261; for(let i=0;i<str.length;i++){ h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return ((h>>>0) % 1000) / 1000; }
+// sessions must be newest-first. Recent sessions weigh more.
+function recentUsage(sessions){
+  const usage = {};
+  sessions.slice(0, 6).forEach((s,i)=>{
+    const w = 1 - i*0.15, seen = new Set();
+    (s.completed_exercises || []).forEach(e=>{
+      if(e && e.status === "completed" && !seen.has(e.name)){ seen.add(e.name); usage[e.name] = (usage[e.name]||0) + w; }
+    });
+  });
+  return usage;
+}
+function scoreUnit(unit, ctx){
+  let s = 0;
+  const tags = new Set(unit.flatMap(n=>POSE_GOALS[n] || []));
+  ctx.goals.forEach(g=>{ if(tags.has(g)) s += 3; });                                   // goal match
+  s -= Math.abs(LEVEL_ORDER.indexOf(DIFFICULTY[unit[0]]) - ctx.tier);                  // difficulty preference
+  if(unit.some(n=>ctx.favs.has(n))) s += 2.5;                                          // favorites
+  const recent = Math.max(...unit.map(n=>ctx.recent[n] || 0));
+  s -= 2 * recent;                                                                     // variety: rotate away from recent sessions
+  if(recent === 0 && unit.some(n=>ctx.ever.has(n))) s += 0.5;                          // familiarity: practiced before, not recently
+  s += hash01(unit[0] + "|" + ctx.dayKey) * 0.6;                                       // small deterministic daily rotation
+  return s;
+}
+function buildPracticePlan(opts){
+  const o = opts || {};
+  const profile = o.profile || {};
+  const minutes = o.minutes || profile.session_duration || 15;
+  const holdSec = profile.asana_hold_time || 15;
+  const repTarget = profile.exercise_rep_limit || 10;
+  const sessions = o.sessions || [];
+  const ex = exclusionSets(profile, o.avoidedSet);
+  const goals = o.goal ? [String(o.goal).toLowerCase()] : normGoals(profile);
+  const ever = new Set();
+  sessions.forEach(s=>(s.completed_exercises || []).forEach(e=>{ if(e && e.status === "completed") ever.add(e.name); }));
+  const ctx = { goals, tier:preferredTier(profile), favs:o.favs || new Set(), recent:recentUsage(sessions), ever, dayKey:o.dayKey || todayStr() };
+
+  const everyName = [...ALL_POSES, ...ALL_COUNTERS];
+  const safetySkipped = everyName.filter(n=>ex.allowed.has(DIFFICULTY[n]) && (ex.painAvoid.has(n) || ex.avoided.has(n))).length;
+  const eligible = exerciseUnits().filter(u=>u.every(n=>isEligible(n, ex)));
+
+  const budget = minutes * 60;
+  const isCtr = n => ALL_COUNTERS.includes(n);
+  const unitSeconds = u => u.reduce((t,n)=> t + (isCtr(n) ? repTarget*3 : holdSec) + SEC_OVERHEAD, 0);
+  const counterShare = goals.some(g=>g === "strength" || g === "general fitness") ? 0.4 : (goals.length ? 0.15 : 0.25);
+  const scored = eligible.map(u=>({ u, s:scoreUnit(u, ctx), t:unitSeconds(u), counter:isCtr(u[0]) }))
+    .sort((a,b)=> b.s - a.s || (a.u[0] < b.u[0] ? -1 : 1));
+
+  const chosen = []; let used = 0, counterUsed = 0;
+  for(const c of scored){
+    if(chosen.length >= 30) break;
+    if(used + c.t > budget * 1.08) continue;
+    if(c.counter && counterUsed + c.t > budget * counterShare) continue;
+    chosen.push(c); used += c.t; if(c.counter) counterUsed += c.t;
+  }
+  const base = { title:"Today's Practice", goalLabel:(profile.goals || []).find(g=>g !== "Other") || "General fitness",
+    minutesTarget:minutes, levelLabel:cap(levelOf(profile)), safetySkipped, usedHistory:sessions.length > 0, goals };
+  if(chosen.reduce((n,c)=>n + c.u.length, 0) < 3) return { ...base, steps:[], names:[], estMinutes:0, reason:"Your current level, pain areas and avoided list leave too few exercises to build a session." };
+
+  // Order: easiest poses first, rep exercises after the poses, one calming pose to finish.
+  const tagsOf = u => new Set(u.flatMap(n=>POSE_GOALS[n] || []));
+  const closing = chosen.filter(c=>!c.counter && tagsOf(c.u).has("relaxation")).sort((a,b)=>b.s-a.s)[0] || null;
+  const rest = chosen.filter(c=>c !== closing).sort((a,b)=>{
+    const ka = a.counter ? 3 : LEVEL_ORDER.indexOf(DIFFICULTY[a.u[0]]);
+    const kb = b.counter ? 3 : LEVEL_ORDER.indexOf(DIFFICULTY[b.u[0]]);
+    return ka - kb || b.s - a.s || (a.u[0] < b.u[0] ? -1 : 1);
+  });
+  const onePass = (closing ? [...rest, closing] : rest).flatMap(c=>c.u);
+  const secOf = n => (isCtr(n) ? repTarget*3 : holdSec) + SEC_OVERHEAD;
+  const passSec = onePass.reduce((t,n)=>t + secOf(n), 0);
+  // The library is finite. If one pass falls well short of the requested time, repeat the same
+  // ordered sequence as extra rounds (max 3) rather than silently handing back a much shorter session.
+  let rounds = 1;
+  while(rounds < 3 && passSec * rounds < budget * 0.7 && passSec * (rounds + 1) <= budget * 1.08) rounds++;
+  const names = []; for(let r = 0; r < rounds; r++) names.push(...onePass);
+  const steps = names.map(n=> isCtr(n) ? counterStep(n, repTarget) : holdStep(n, holdSec));
+  const est = passSec * rounds;
+  return { ...base, steps, names, rounds, passCount:onePass.length, estMinutes:Math.max(1, Math.round(est/60)), reason:"" };
+}
+/*P1-PURE-END*/
 
 function friendlyAuthError(error){
   const msg = (error && error.message) || "Something went wrong. Please try again.";
@@ -503,6 +923,7 @@ function friendlyAuthError(error){
 }
 
 function renderAuthHeader(){
+  renderHome();
   const el = document.getElementById("auth-header-area");
   if (!el) return;
   if (authUser) {
@@ -638,6 +1059,7 @@ window.doUpdatePassword = async function(){
 window.doLogout = async function(){
   try { await sb.auth.signOut(); } catch(e) {}
   authUser = null; authProfile = null;
+  resetUserData();
   renderAuthHeader();
   goToScreen("home");
 };
@@ -672,6 +1094,7 @@ window.showAccountScreen = async function(){
       authUser = data.session.user;
       await loadProfile();
       renderAuthHeader();
+      loadUserData();
     }
   } catch(e) {
     console.warn("Supabase session check failed (is SUPABASE_URL/KEY set?)", e);
@@ -681,8 +1104,12 @@ window.showAccountScreen = async function(){
     sb.auth.onAuthStateChange(async (event, session) => {
       if (event === "PASSWORD_RECOVERY") { showAuthScreen("recovery"); return; }
       authUser = session ? session.user : null;
-      if (authUser) await loadProfile(); else authProfile = null;
+      if (authUser) await loadProfile(); else { authProfile = null; resetUserData(); }
       renderAuthHeader();
+      if (authUser) setTimeout(()=>loadUserData(), 0);
+      // Only prompt personalization on a genuine sign-in action (fresh
+      // signup or login), never on a background token refresh.
+      if (event === "SIGNED_IN") checkFirstTimePersonalization();
     });
   } catch(e) {
     console.warn("Supabase auth listener could not start", e);
@@ -919,6 +1346,326 @@ const ROUTINES = {
 };
 
 // ============================================================
+// PERSONALIZATION metadata - purely additive, doesn't change the
+// shape of POSE_LIBRARY/COUNTER_LIBRARY/DIFFICULTY/ISSUE_AVOID_MAP.
+// ============================================================
+const GOALS_LIST = ["Flexibility","Strength","Balance","Relaxation","Mobility","General fitness","Other"];
+const PAIN_AREAS_LIST = ["Neck","Shoulders","Back","Lower back","Wrists","Hips","Knees","Ankles","None","Other"];
+const DIFFICULTY_LIST = ["Easy","Moderate","Challenging"];
+const SESSION_DURATIONS = [5,10,15,20,30,45,60];
+const ASANA_HOLD_TIMES = [10,15,20,30,45,60];
+const REP_LIMITS = [5,10,15,20,25,30];
+
+// Maps the personalization screen's pain-area wording onto the existing
+// ISSUE_AVOID_MAP keys used by the Personal Workout Routine filter.
+// Ankles/None/Other have no existing avoid-list entry, so they're left
+// unmapped rather than inventing untested pose-safety rules.
+const PAIN_AREA_TO_ISSUE = {
+  "Neck":"Neck", "Shoulders":"Shoulder", "Back":"Lower back", "Lower back":"Lower back",
+  "Wrists":"Wrist", "Hips":"Hip", "Knees":"Knee",
+};
+
+// Lightweight goal tags per pose/counter - best-effort categorization,
+// used only to PRIORITIZE alternatives (never to strictly exclude),
+// so an imperfect tag never blocks a valid substitute exercise.
+const POSE_GOALS = {
+  "Tadasana (Mountain Pose)": ["relaxation","balance"],
+  "Pranamasana (Prayer Pose)": ["relaxation"],
+  "Urdhva Hastasana (Raised Arms Pose)": ["flexibility","mobility"],
+  "Padangusthasana (Big Toe Pose / Forward Bend)": ["flexibility"],
+  "Ashwa Sanchalanasana (Right Leg Back)": ["strength","flexibility"],
+  "Ashwa Sanchalanasana (Left Leg Back)": ["strength","flexibility"],
+  "Phalakasana (Plank Pose)": ["strength"],
+  "Bhujangasana (Cobra Pose)": ["flexibility","mobility"],
+  "Adho Mukha Svanasana (Downward Dog)": ["strength","flexibility"],
+  "Vrikshasana (Right Foot Up)": ["balance"],
+  "Vrikshasana (Left Foot Up)": ["balance"],
+  "Virabhadrasana II (Right Leg Forward)": ["strength","balance"],
+  "Virabhadrasana II (Left Leg Forward)": ["strength","balance"],
+  "Chakrasana (Wheel Pose)": ["flexibility","strength"],
+  "Balasana (Child's Pose)": ["relaxation"],
+  "Camel Pose (Ustrasana)": ["flexibility","mobility"],
+  "Dhanurasana (Bow Pose)": ["flexibility","strength"],
+  "Hanumanasana (Monkey Pose / Splits)": ["flexibility"],
+  "Urdhva Mukha Svanasana (Upward Dog)": ["flexibility","strength"],
+  "Chaturanga Dandasana (Low Plank)": ["strength"],
+  "Devyasana (Goddess Pose)": ["strength","balance"],
+  "Malasana (Garland Pose)": ["mobility","flexibility"],
+  "Ardha Chandrasana (Standing Side Bend)": ["flexibility","balance"],
+  "Trikonasana (Triangle Pose)": ["flexibility","balance"],
+  "Parsvottanasana (Pyramid Pose)": ["flexibility"],
+  "Anjaneyasana (Right Leg Forward)": ["flexibility","strength"],
+  "Anjaneyasana (Left Leg Forward)": ["flexibility","strength"],
+  "Skandasana (Right Leg Bent)": ["mobility","flexibility"],
+  "Skandasana (Left Leg Bent)": ["mobility","flexibility"],
+  "Push-up Counter": ["strength"],
+  "Pull-up Counter": ["strength"],
+  "Squat Counter": ["strength","mobility"],
+  "Jumping Jacks Counter": ["general fitness"],
+  "Dands (Hindu Push-ups) Counter": ["strength","general fitness"],
+};
+
+// --- Build the Personalize screen's static form controls ONCE, same
+// pattern as the existing issues-grid/level-row elsewhere in this file.
+function buildRadioRow(containerId, options, nameAttr){
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  options.forEach((opt,i)=>{
+    const label = document.createElement("label");
+    label.className = "radio-item";
+    const display = typeof opt === "string" ? (opt[0].toUpperCase()+opt.slice(1)) : opt;
+    label.innerHTML = `<input type="radio" name="${nameAttr}" value="${opt}"> ${display}`;
+    el.appendChild(label);
+  });
+}
+function buildCheckboxGrid(containerId, options){
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  options.forEach(opt=>{
+    const label = document.createElement("label");
+    label.className = "checkbox-item";
+    label.innerHTML = `<input type="checkbox" value="${opt}"> ${opt}`;
+    el.appendChild(label);
+  });
+}
+function buildSelect(containerId, options, suffix){
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  options.forEach(opt=>{
+    const o = document.createElement("option");
+    o.value = opt; o.textContent = opt + " " + suffix;
+    el.appendChild(o);
+  });
+}
+buildRadioRow("personalize-level-row", LEVEL_ORDER, "personalize-level");
+buildCheckboxGrid("personalize-goals-grid", GOALS_LIST);
+buildRadioRow("personalize-difficulty-row", DIFFICULTY_LIST, "personalize-difficulty");
+buildSelect("personalize-duration", SESSION_DURATIONS, "min");
+buildSelect("personalize-hold", ASANA_HOLD_TIMES, "sec");
+buildSelect("personalize-reps", REP_LIMITS, "reps");
+buildCheckboxGrid("personalize-pain-grid", PAIN_AREAS_LIST);
+
+function hasPersonalization(profile){
+  return !!(profile && profile.yoga_level);
+}
+
+function checkFirstTimePersonalization(){
+  if (authUser && !hasPersonalization(authProfile)) {
+    showPersonalizeScreen(true);
+  }
+}
+
+window.showPersonalizeScreen = function(isFirstTime){
+  const p = authProfile || {};
+  document.querySelectorAll('#personalize-level-row input').forEach(i=>{ i.checked = (i.value === p.yoga_level); });
+  document.querySelectorAll('#personalize-goals-grid input').forEach(i=>{ i.checked = Array.isArray(p.goals) && p.goals.includes(i.value); });
+  document.querySelectorAll('#personalize-difficulty-row input').forEach(i=>{ i.checked = (i.value === p.preferred_difficulty); });
+  document.querySelectorAll('#personalize-pain-grid input').forEach(i=>{ i.checked = Array.isArray(p.pain_areas) && p.pain_areas.includes(i.value); });
+  const durSel = document.getElementById("personalize-duration"); if (durSel) durSel.value = p.session_duration || SESSION_DURATIONS[2];
+  const holdSel = document.getElementById("personalize-hold"); if (holdSel) holdSel.value = p.asana_hold_time || ASANA_HOLD_TIMES[1];
+  const repsSel = document.getElementById("personalize-reps"); if (repsSel) repsSel.value = p.exercise_rep_limit || REP_LIMITS[1];
+
+  document.getElementById("personalize-heading").textContent = isFirstTime ? "Personalize Your Practice" : "Edit Your Preferences";
+  document.getElementById("personalize-intro").style.display = isFirstTime ? "block" : "none";
+  document.getElementById("personalize-skip-btn").style.display = isFirstTime ? "inline-block" : "none";
+  document.getElementById("personalize-back-link").style.display = isFirstTime ? "none" : "inline-block";
+  document.getElementById("personalize-error").textContent = "";
+  goToScreen("personalize");
+};
+
+window.savePersonalization = async function(){
+  if (!authUser) { alert("Please log in first."); return; }
+  const errEl = document.getElementById("personalize-error");
+  errEl.textContent = ""; errEl.style.color = "";
+
+  const yoga_level = (document.querySelector('#personalize-level-row input:checked')||{}).value || null;
+  const goals = Array.from(document.querySelectorAll('#personalize-goals-grid input:checked')).map(i=>i.value);
+  const preferred_difficulty = (document.querySelector('#personalize-difficulty-row input:checked')||{}).value || null;
+  const session_duration = parseInt(document.getElementById("personalize-duration").value, 10) || null;
+  const asana_hold_time = parseInt(document.getElementById("personalize-hold").value, 10) || null;
+  const exercise_rep_limit = parseInt(document.getElementById("personalize-reps").value, 10) || null;
+  const pain_areas = Array.from(document.querySelectorAll('#personalize-pain-grid input:checked')).map(i=>i.value);
+
+  if (!yoga_level) { errEl.textContent = "Please choose your yoga experience level."; return; }
+
+  try {
+    const { data, error } = await sb.from("profiles").update({
+      yoga_level, goals, preferred_difficulty, session_duration,
+      asana_hold_time, exercise_rep_limit, pain_areas,
+      updated_at: new Date().toISOString(),
+    }).eq("id", authUser.id).select().single();
+    if (error) { errEl.textContent = friendlyAuthError(error); return; }
+    authProfile = data;
+    errEl.style.color = "var(--accent)";
+    errEl.textContent = "Preferences saved.";
+    renderAuthHeader();
+    setTimeout(()=>{ goToScreen("home"); }, 700);
+  } catch(e) {
+    errEl.textContent = "Could not reach the server. Check your connection and try again.";
+  }
+};
+
+function renderAvoidedList(){
+  const el = document.getElementById("avoided-list");
+  if (!el) return;
+  const avoided = (authProfile && authProfile.avoided_exercises) || [];
+  if (avoided.length === 0) { el.innerHTML = '<div class="empty-state">No avoided exercises.</div>'; return; }
+  el.innerHTML = "";
+  avoided.forEach(name=>{
+    const row = document.createElement("div");
+    row.className = "avoided-row";
+    row.innerHTML = `<span>${escapeHtml(name)}</span>`;
+    const btn = document.createElement("button");
+    btn.className = "btn-secondary"; btn.textContent = "Remove"; btn.style.padding = "4px 12px";
+    btn.onclick = () => removeAvoidedExercise(name);
+    row.appendChild(btn);
+    el.appendChild(row);
+  });
+}
+
+window.removeAvoidedExercise = async function(name){
+  if (!authUser || !authProfile) return;
+  const updated = (authProfile.avoided_exercises || []).filter(n => n !== name);
+  try {
+    const { data, error } = await sb.from("profiles").update({ avoided_exercises: updated, updated_at: new Date().toISOString() }).eq("id", authUser.id).select().single();
+    if (!error) { authProfile = data; renderAvoidedList(); }
+  } catch(e) { console.warn("Could not remove avoided exercise", e); }
+};
+
+window.clearAllAvoided = async function(){
+  if (!authUser || !authProfile) return;
+  if (!confirm("Clear all avoided exercises? They'll become eligible for future workouts again.")) return;
+  try {
+    const { data, error } = await sb.from("profiles").update({ avoided_exercises: [], updated_at: new Date().toISOString() }).eq("id", authUser.id).select().single();
+    if (!error) { authProfile = data; renderAvoidedList(); }
+  } catch(e) { console.warn("Could not clear avoided exercises", e); }
+};
+
+function renderAccountProfileSummary(){
+  const p = authProfile || {};
+  document.getElementById("prof-level").textContent = p.yoga_level ? (p.yoga_level[0].toUpperCase()+p.yoga_level.slice(1)) : "Not set";
+  document.getElementById("prof-goals").textContent = (Array.isArray(p.goals) && p.goals.length) ? p.goals.join(", ") : "Not set";
+  document.getElementById("prof-difficulty").textContent = p.preferred_difficulty || "Not set";
+  document.getElementById("prof-duration").textContent = p.session_duration ? (p.session_duration + " min") : "Not set";
+  document.getElementById("prof-hold").textContent = p.asana_hold_time ? (p.asana_hold_time + " sec") : "Not set";
+  document.getElementById("prof-reps").textContent = p.exercise_rep_limit ? (p.exercise_rep_limit + " reps") : "Not set";
+  document.getElementById("prof-pain").textContent = (Array.isArray(p.pain_areas) && p.pain_areas.length) ? p.pain_areas.join(", ") : "None reported";
+  renderAvoidedList();
+}
+
+// --- Pain reporting + alternative-exercise engine ---
+function getCurrentExerciseName(){
+  if (practiceMode === "sequence" && sequenceSteps[sequenceIndex]) return sequenceSteps[sequenceIndex].name;
+  if (poseListForPractice && poseListForPractice.length) return poseListForPractice[poseIndex];
+  return null;
+}
+
+// Reusable: finds a substitute for currentExercise that respects the
+// user's level/pain areas, excludes anything already avoided, and
+// prefers a similar purpose (shared goal tags). Returns null if none
+// found - callers must treat null as "no suitable alternative exists."
+function getAlternativeExercise(currentExercise, profile, avoidedSet, excludeSet){
+  const isCounter = ALL_COUNTERS.includes(currentExercise);
+  const pool = isCounter ? ALL_COUNTERS : ALL_POSES;
+
+  const level = (profile && profile.yoga_level) || "advanced"; // no profile/level -> don't over-restrict
+  const allowedDifficulty = new Set(LEVEL_ORDER.slice(0, LEVEL_ORDER.indexOf(level) + 1));
+
+  const painAvoid = new Set();
+  ((profile && profile.pain_areas) || []).forEach(area=>{
+    const issue = PAIN_AREA_TO_ISSUE[area];
+    if (issue) (ISSUE_AVOID_MAP[issue] || []).forEach(ex => painAvoid.add(ex));
+  });
+
+  const myGoals = new Set(POSE_GOALS[currentExercise] || []);
+
+  const candidates = pool.filter(name =>
+    name !== currentExercise &&
+    !avoidedSet.has(name) &&
+    !(excludeSet && excludeSet.has(name)) &&
+    allowedDifficulty.has(DIFFICULTY[name]) &&
+    !painAvoid.has(name)
+  );
+
+  if (candidates.length === 0) return null;
+
+  candidates.sort((a,b)=>{
+    const aOverlap = (POSE_GOALS[a]||[]).filter(g=>myGoals.has(g)).length;
+    const bOverlap = (POSE_GOALS[b]||[]).filter(g=>myGoals.has(g)).length;
+    return bOverlap - aOverlap;
+  });
+
+  return candidates[0];
+}
+
+window.reportPain = async function(){
+  const current = getCurrentExerciseName();
+  if (!current) return;
+
+  // 1. Stop the current exercise immediately.
+  if (rafId) cancelAnimationFrame(rafId);
+  if (stream) stream.getTracks().forEach(t=>t.stop());
+  stream = null;
+
+  // 2/3. Mark as avoided, persist if logged in.
+  let avoidedSet;
+  if (authUser) {
+    const current_avoided = (authProfile && authProfile.avoided_exercises) || [];
+    const updated = current_avoided.includes(current) ? current_avoided : [...current_avoided, current];
+    try {
+      const { data, error } = await sb.from("profiles").update({ avoided_exercises: updated, updated_at: new Date().toISOString() }).eq("id", authUser.id).select().single();
+      if (!error) authProfile = data;
+    } catch(e) { console.warn("Could not save avoided exercise", e); }
+    avoidedSet = new Set((authProfile && authProfile.avoided_exercises) || updated);
+  } else {
+    // Not logged in: session-only avoidance, can't persist.
+    sessionOnlyAvoided.add(current);
+    avoidedSet = sessionOnlyAvoided;
+  }
+
+  // Show the pain-reported message, hide the Yes prompt.
+  document.getElementById("pain-prompt").style.display = "none";
+  const msgEl = document.getElementById("pain-message");
+  msgEl.style.display = "block";
+  msgEl.innerHTML = `<p>Pain reported. This exercise has been removed from your practice.</p><p class="hint">Finding an alternative...</p>`;
+  document.getElementById("pain-doctor-warning").style.display = "none";
+
+  // 6/7. Search for an alternative. In a routine, prefer one that isn't already a step of it.
+  const inSequence = practiceMode === "sequence" && !!sequenceSteps[sequenceIndex];
+  const alternative = inSequence
+    ? (getAlternativeExercise(current, authProfile, avoidedSet, new Set(sequenceSteps.map(s=>s.name))) || getAlternativeExercise(current, authProfile, avoidedSet))
+    : getAlternativeExercise(current, authProfile, avoidedSet);
+
+  if (alternative) {
+    if (inSequence) msgEl.innerHTML = `<p>Pain reported. Replacing this step with <b>${escapeHtml(alternative)}</b> - your routine continues.</p>`;
+    setTimeout(async () => {
+      msgEl.style.display = "none";
+      document.getElementById("pain-prompt").style.display = "block";
+      if (inSequence) {
+        // A -> B -> C -> D -> E, pain on C  =>  A -> B -> Alt-C -> D -> E.
+        // Same sequenceIndex, same recorder, same remaining steps; only the step itself changes.
+        replaceSequenceStepInPlace(current, alternative);
+        resetHoldAndCounter();
+        sequenceState = "active";
+        updateSequenceUI();
+        if (await openCamera()) loop();
+      } else {
+        recSubstitute(current, alternative, 0);
+        const listContext = ALL_COUNTERS.includes(alternative) ? ALL_COUNTERS : ALL_POSES;
+        startSingle(alternative, listContext, { keepSession: true });
+      }
+    }, 1200);
+  } else {
+    // 8. No suitable alternative - critical fallback, do NOT keep cycling.
+    msgEl.style.display = "none";
+    const warnEl = document.getElementById("pain-doctor-warning");
+    warnEl.style.display = "block";
+    warnEl.innerHTML = `<div class="doctor-warning"><h3>You need a doctor.</h3><p>YogaAI cannot determine the cause of your pain. Stop the exercise and seek appropriate medical advice before continuing.</p></div>`;
+  }
+};
+let sessionOnlyAvoided = new Set(); // used only when not logged in
+
+// ============================================================
 // RECOMMENDATION LOGIC
 // ============================================================
 function recommendPoses(level, issues){
@@ -941,18 +1688,25 @@ function recommendPoses(level, issues){
 // ============================================================
 window.goToScreen = function(name){
   if ("speechSynthesis" in window) window.speechSynthesis.cancel(); // don't keep talking after navigating away
+  // Leaving the practice screen by any route other than Stop/summary: release the camera and
+  // save whatever was genuinely completed, instead of leaving the camera running in the background.
+  const cur = document.querySelector(".screen.active");
+  if (cur && cur.id === "practice-screen" && name !== "practice" && name !== "summary") leavePracticeScreen();
   document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
   document.getElementById(name+"-screen").classList.add("active");
+  if (name === "home") renderHome();
 };
 
 // --- Routines screen ---
 const routinesList = document.getElementById("routines-list");
 Object.keys(ROUTINES).forEach(routineName=>{
+  const row = document.createElement("div"); row.className = "fav-row";
   const btn = document.createElement("button");
   btn.className = "pose-btn";
   btn.innerHTML = `<span>${routineName}</span><span class="tag">${ROUTINES[routineName].length} steps</span>`;
-  btn.onclick = () => startSequence(routineName, ROUTINES[routineName]);
-  routinesList.appendChild(btn);
+  btn.onclick = () => startSequence(routineName, ROUTINES[routineName], { sessionType: "preset_routine" });
+  row.appendChild(btn); row.appendChild(makeFavButton("routine", routineName, routineName));
+  routinesList.appendChild(row);
 });
 
 // --- Free Exercise screen ---
@@ -964,13 +1718,17 @@ window.showFreeExercise = function(){
     const btn=document.createElement("button"); btn.className="pose-btn";
     btn.innerHTML=`<span>${pose}</span><span class="tag">${DIFFICULTY[pose]}</span>`;
     btn.onclick=()=>startSingle(pose, ALL_POSES);
-    posesList.appendChild(btn);
+    const row=document.createElement("div"); row.className="fav-row";
+    row.appendChild(btn); row.appendChild(makeFavButton("asana", pose, pose));
+    posesList.appendChild(row);
   });
   ALL_COUNTERS.forEach(pose=>{
     const btn=document.createElement("button"); btn.className="pose-btn";
     btn.innerHTML=`<span>${pose}</span><span class="tag">${DIFFICULTY[pose]}</span>`;
     btn.onclick=()=>startSingle(pose, ALL_COUNTERS);
-    countersList.appendChild(btn);
+    const row=document.createElement("div"); row.className="fav-row";
+    row.appendChild(btn); row.appendChild(makeFavButton("exercise", pose, pose));
+    countersList.appendChild(row);
   });
   goToScreen("free-exercise");
 };
@@ -1403,6 +2161,7 @@ function renderKriyaList(){
       </div>
       ${k.mediaType ? `<span class="kriya-media-tag">${k.mediaType}</span>` : ""}
     `;
+    card.appendChild(makeFavButton("kriya", String(k.id), k.title || "Untitled"));
     card.onclick = () => showLearnDetail(k.id);
     wrap.appendChild(card);
   });
@@ -1485,6 +2244,7 @@ window.showLearnDetail = function(kriyaId){
   const k = kriyaList.find(x=>x.id===kriyaId);
   if(!k) return;
   document.getElementById("detail-title").textContent = k.title;
+  setStaticFav("detail-fav", "kriya", String(k.id), k.title || "Untitled");
   document.getElementById("detail-text").textContent = k.text || "(no notes added)";
   const mediaWrap = document.getElementById("detail-media-wrap");
   mediaWrap.innerHTML = "";
@@ -1660,8 +2420,9 @@ async function openCamera(){
   return true;
 }
 
-window.startSingle = async function(name, listContext){
+window.startSingle = async function(name, listContext, opts){
   practiceMode='single';
+  if (!(opts && opts.keepSession)) { recStart("free", null, null); lastLaunch = { kind:"single", name, list:listContext }; }
   poseListForPractice = listContext || [...ALL_POSES,...ALL_COUNTERS];
   poseIndex = poseListForPractice.indexOf(name); if(poseIndex<0) poseIndex=0;
   resetHoldAndCounter();
@@ -1672,9 +2433,13 @@ window.startSingle = async function(name, listContext){
   if(await openCamera()) loop();
 };
 
-window.startSequence = async function(routineName, steps){
+window.startSequence = async function(routineName, steps, opts){
   practiceMode='sequence';
-  sequenceSteps = steps; sequenceIndex=0; sequenceState="active";
+  // Copy the steps: in-place pain replacement must never mutate the shared ROUTINES presets.
+  sequenceSteps = steps.map(s=>({...s})); sequenceIndex=0; sequenceState="active";
+  const sType = (opts && opts.sessionType) || (ROUTINES[routineName] ? "preset_routine" : "custom_routine");
+  recStart(sType, routineName, (opts && opts.goal) || null);
+  lastLaunch = { kind:"sequence", name:routineName, steps:steps.map(s=>({...s})), sessionType:sType, goal:(opts && opts.goal) || null };
   resetHoldAndCounter();
   document.getElementById("step-progress").style.display="block";
   document.getElementById("switch-panel").style.display="none";
@@ -1685,6 +2450,7 @@ window.startSequence = async function(routineName, steps){
 
 window.startCalorieMode = async function(name){
   practiceMode='calorie';
+  recStart("calorie", null, null); lastLaunch = { kind:"calorie", name };
   const unit = document.querySelector('input[name="weight-unit"]:checked').value;
   const raw = parseFloat(document.getElementById("weight-input").value) || 70;
   weightKg = unit === "lb" ? raw*0.453592 : raw;
@@ -1703,6 +2469,7 @@ function updatePracticeUI(){
   const name = poseListForPractice[poseIndex];
   document.getElementById("practice-title").textContent = "Practicing: "+name;
   document.getElementById("practice-tip").textContent = REF_TIPS[name]||"";
+  refreshPracticeFav(name);
   document.getElementById("hold-mode-controls").style.display = (!isCounter(name) && practiceMode!=='calorie') ? "flex":"none";
   document.getElementById("counter-mode-controls").style.display = (isCounter(name) && practiceMode!=='calorie') ? "flex":"none";
   document.getElementById("calorie-mode-controls").style.display = practiceMode==='calorie' ? "block":"none";
@@ -1715,6 +2482,7 @@ function updateSequenceUI(){
   document.getElementById("step-progress").textContent = `Step ${sequenceIndex+1}/${sequenceSteps.length}: ${step.name}`;
   document.getElementById("practice-title").textContent = step.name;
   document.getElementById("practice-tip").textContent = REF_TIPS[step.name]||"";
+  refreshPracticeFav(step.name);
   document.getElementById("hold-mode-controls").style.display = step.type==='hold' ? "flex":"none";
   document.getElementById("counter-mode-controls").style.display = step.type==='counter' ? "flex":"none";
   document.getElementById("timed-mode-controls").style.display = step.type==='timed' ? "block":"none";
@@ -1734,6 +2502,7 @@ function renderMiniPoseList(){
 window.stepPose = function(dir){ poseIndex=(poseIndex+dir+poseListForPractice.length)%poseListForPractice.length; resetHoldAndCounter(); updatePracticeUI(); renderMiniPoseList(); };
 window.adjustTimer = function(delta){ holdSecondsTarget=Math.max(5,holdSecondsTarget+delta); document.getElementById("timer-display").textContent=`${holdSecondsTarget}s target`; };
 window.resetCounter = function(){
+  if (rec && rec.curKey && rec.byKey[rec.curKey]) rec.byKey[rec.curKey].repsBank = rec.byKey[rec.curKey].reps; // keep reps already done
   counterCount=0; counterState="down";
   document.getElementById("counter-display").textContent="0 reps";
   if(practiceMode==='calorie'){ totalCalories=0; document.getElementById("calorie-display").textContent="0.00 kcal"; }
@@ -1742,6 +2511,9 @@ window.stopPractice = function(){
   if(rafId) cancelAnimationFrame(rafId);
   if(stream) stream.getTracks().forEach(t=>t.stop());
   stream=null;
+  // Genuinely completed work gets a summary + is saved; otherwise behave exactly as before.
+  const result = recFinalize("stopped");
+  if(result){ presentSummary(result); return; }
   if(practiceMode==='sequence') goToScreen("routines");
   else if(practiceMode==='calorie') goToScreen("calorie");
   else goToScreen("home");
@@ -1766,7 +2538,7 @@ function loop(){
     document.getElementById("timed-display").textContent = Math.max(0,remain).toFixed(1)+"s remaining";
     document.getElementById("status-pill").textContent = "Keep going...";
     document.getElementById("status-pill").className = "status-pill status-correct";
-    if(remain<=0){ sequenceState="paused"; pauseStart=performance.now(); document.getElementById("status-pill").textContent="Done!"; }
+    if(remain<=0){ recMarkStepDone(); sequenceState="paused"; pauseStart=performance.now(); document.getElementById("status-pill").textContent="Done!"; }
   }
 
   if(result.landmarks && result.landmarks.length>0){
@@ -1795,13 +2567,14 @@ function loop(){
         document.getElementById("calorie-display").textContent = totalCalories.toFixed(2)+" kcal";
       }
 
+      recFrame(currentName, "counter");
       pill.textContent = counterState==="up" ? "UP" : "DOWN";
       pill.className = "status-pill "+(counterState==="up"?"status-correct":"status-adjust");
       metricList.innerHTML="";
 
       if(practiceMode==='sequence'){
         document.getElementById("counter-display").textContent = `${counterCount} / ${sequenceSteps[sequenceIndex].target} reps`;
-        if(counterCount>=sequenceSteps[sequenceIndex].target && sequenceState==='active'){ sequenceState="paused"; pauseStart=performance.now(); }
+        if(counterCount>=sequenceSteps[sequenceIndex].target && sequenceState==='active'){ recMarkStepDone(); sequenceState="paused"; pauseStart=performance.now(); }
       } else {
         document.getElementById("counter-display").textContent = counterCount+" reps";
       }
@@ -1813,7 +2586,7 @@ function loop(){
         if(holdStartTime===null) holdStartTime=performance.now();
         elapsed = (performance.now()-holdStartTime)/1000;
         if(elapsed>=holdSecondsTarget){
-          if(practiceMode==='sequence' && sequenceState==='active'){ sequenceState="paused"; pauseStart=performance.now(); }
+          if(practiceMode==='sequence' && sequenceState==='active'){ recMarkStepDone(); sequenceState="paused"; pauseStart=performance.now(); }
           else flashUntil = performance.now()+2000;
         }
       } else { holdStartTime=null; elapsed=0; }
@@ -1847,6 +2620,7 @@ function loop(){
       }
 
       const nothingVisible = Object.values(results).every(r => r === null);
+      recFrame(currentName, "hold", { allCorrect, nothingVisible });
       pill.textContent = nothingVisible
         ? "Can't see you clearly - adjust camera/position"
         : (allCorrect ? (performance.now()<flashUntil?"TARGET REACHED!":"POSE CORRECT") : "ADJUST POSE");
@@ -1888,6 +2662,7 @@ function loop(){
         document.getElementById("counter-mode-controls").style.display="none";
         document.getElementById("timed-mode-controls").style.display="none";
         practiceMode = 'sequence-done';
+        finishPracticeFromLoop();
       } else {
         sequenceState = "active";
         updateSequenceUI();
@@ -1895,6 +2670,565 @@ function loop(){
     }
   }
 }
+
+// ============================================================
+// PHASE 1 - SESSION RECORDER
+// Records what the existing practice engine already computes
+// (reps, hold time, step completion, form-frame counts). It never
+// touches the camera, landmarks or detection - only counters.
+// ============================================================
+/*P1-REC-START*/
+function recStart(sessionType, routineName, goal){
+  rec = { sessionType, routineName: routineName || null, goal: goal || null,
+          startedAt: new Date(), tz: safeTz(),               // timezone captured when the session starts
+          entries: [], byKey: {}, curKey: null, substitutions: [], done: false };
+}
+function recEntry(key, name, kind, target){
+  if(!rec) return null;
+  let e = rec.byKey[key];
+  if(!e){
+    e = { key, name, kind, target, reps:0, repsBank:0, holdSeconds:0, targetHit:false, frames:0, goodFrames:0, status:"active" };
+    rec.byKey[key] = e; rec.entries.push(e);
+  }
+  return e;
+}
+function recKey(name){ return practiceMode === "sequence" ? "s" + sequenceIndex + ":" + name : name; }
+function recRepTarget(){ return (authProfile && authProfile.exercise_rep_limit) || 10; }
+
+// Called every frame from the existing loop (cheap: a few assignments).
+function recFrame(name, stepType, info){
+  if(!rec || rec.done) return;
+  const key = recKey(name);
+  if(rec.curKey && rec.curKey !== key && rec.byKey[rec.curKey]){ const p = rec.byKey[rec.curKey]; p.repsBank = p.reps; }
+  rec.curKey = key;
+  if(stepType === "counter"){
+    const target = (practiceMode === "sequence" && sequenceSteps[sequenceIndex]) ? sequenceSteps[sequenceIndex].target : recRepTarget();
+    const e = recEntry(key, name, "exercise", target);
+    if(e.status !== "active") return;
+    e.reps = e.repsBank + counterCount;
+    if(e.reps >= e.target) e.targetHit = true;
+  } else if(stepType === "hold"){
+    const e = recEntry(key, name, "asana", holdSecondsTarget);
+    if(e.status !== "active") return;
+    e.target = holdSecondsTarget;
+    if(elapsed > e.holdSeconds) e.holdSeconds = elapsed;
+    if(elapsed >= holdSecondsTarget) e.targetHit = true;
+    if(info && !info.nothingVisible){ e.frames++; if(info.allCorrect) e.goodFrames++; }
+  }
+}
+// Called at the three points where a sequence step is finished.
+function recMarkStepDone(){
+  if(!rec || rec.done || practiceMode !== "sequence") return;
+  const step = sequenceSteps[sequenceIndex]; if(!step) return;
+  const kind = step.type === "counter" ? "exercise" : (step.type === "timed" ? "timed" : "asana");
+  const e = recEntry("s" + sequenceIndex + ":" + step.name, step.name, kind, step.target);
+  if(e.status === "completed") return;
+  e.status = "completed"; e.targetHit = true;
+  if(kind === "exercise") e.reps = Math.max(e.reps, counterCount);
+  else if(kind === "asana") e.holdSeconds = Math.max(e.holdSeconds, Math.min(elapsed, step.target + 2));
+  else e.holdSeconds = step.target;
+}
+function recSubstitute(oldName, newName, laterCount){
+  if(!rec) return;
+  // The entry may not exist yet (e.g. pain reported before the camera saw a frame) - create it so the
+  // history still shows which step was replaced.
+  const step = practiceMode === "sequence" ? sequenceSteps[sequenceIndex] : null;
+  const e = rec.byKey[recKey(oldName)] || recEntry(recKey(oldName), oldName, ALL_COUNTERS.includes(oldName) ? "exercise" : "asana", step ? step.target : 0);
+  if(e) e.status = "substituted";
+  rec.substitutions.push({ from:oldName, to:newName, reason:"pain_reported",
+    step: practiceMode === "sequence" ? sequenceIndex + 1 : null, later_steps_replaced: laterCount || 0 });
+}
+// Builds the DB row + display summary. Returns null if nothing was genuinely completed (nothing is saved then).
+function recFinalize(mode){
+  if(!rec || rec.done) return null;
+  rec.done = true;
+  const end = new Date();
+  const seq = isSequenceType(rec.sessionType);
+  const duration = Math.max(0, Math.round((end - rec.startedAt) / 1000));
+  const exercises = [];
+  rec.entries.forEach(e=>{
+    let status = e.status;
+    if(status === "active") status = (!seq && e.targetHit) ? "completed" : "incomplete";
+    if(status === "incomplete" && e.reps <= 0 && e.holdSeconds < 1) return;   // nothing happened - don't record
+    exercises.push({ name:e.name, kind:e.kind, status, target:e.target, reps:Math.round(e.reps),
+      hold_seconds:Math.round(e.holdSeconds), form_pct:(e.frames >= 15) ? Math.round(100 * e.goodFrames / e.frames) : null });
+  });
+  const done = exercises.filter(x=>x.status === "completed");
+  if(done.length < 1) return null;
+  const allDone = mode === "completed-all";
+  const status = seq ? (allDone ? "complete" : "partial") : "complete";
+  const countsForStreak = status === "complete" && (seq || duration >= STREAK_MIN_FREE_SECONDS);
+  const row = {
+    started_at: rec.startedAt.toISOString(), completed_at: end.toISOString(),
+    local_date: localDateStr(end, rec.tz), timezone: rec.tz,
+    duration_seconds: duration, session_type: rec.sessionType, routine_name: rec.routineName, goal: rec.goal,
+    completion_status: status, counts_for_streak: countsForStreak,
+    total_reps: exercises.reduce((n,x)=>n + (x.kind === "exercise" ? x.reps : 0), 0),
+    total_hold_seconds: exercises.reduce((n,x)=>n + (x.kind !== "exercise" ? x.hold_seconds : 0), 0),
+    completed_exercises: exercises,
+    metadata: { substitutions: rec.substitutions, planned_steps: seq ? sequenceSteps.length : null, ended: mode,
+                calories_estimate: rec.sessionType === "calorie" ? Math.round(totalCalories * 100) / 100 : undefined },
+  };
+  const holds = done.filter(x=>x.kind === "asana").map(x=>x.hold_seconds);
+  const forms = exercises.filter(x=>x.form_pct !== null).map(x=>x.form_pct);
+  return { row, completed: done.length, asanas: done.filter(x=>x.kind === "asana").length,
+           counters: done.filter(x=>x.kind !== "asana").length,
+           longestHold: holds.length ? Math.max(...holds) : 0,
+           formAvg: forms.length ? Math.round(forms.reduce((a,b)=>a+b,0) / forms.length) : null, formCount: forms.length };
+}
+
+// Replace the current sequence step (and any later repeats of the same exercise) WITHOUT
+// touching sequenceIndex, sequenceState, the recorder or the other steps.
+function replaceSequenceStepInPlace(oldName, newName){
+  const i = sequenceIndex;
+  const mk = ref => ALL_COUNTERS.includes(newName)
+    ? counterStep(newName, (ref && ref.type === "counter") ? ref.target : recRepTarget())
+    : holdStep(newName, (ref && ref.type === "hold") ? ref.target : ((authProfile && authProfile.asana_hold_time) || 15));
+  let later = 0;
+  for(let j = i + 1; j < sequenceSteps.length; j++){
+    if(sequenceSteps[j].name === oldName){ sequenceSteps[j] = mk(sequenceSteps[j]); later++; }
+  }
+  recSubstitute(oldName, newName, later);
+  sequenceSteps[i] = mk(sequenceSteps[i]);
+  return later;
+}
+/*P1-REC-END*/
+
+// ============================================================
+// PHASE 1 - DATA (Supabase; every table is RLS-protected per user)
+// ============================================================
+function resetUserData(){ userData = newUserData(); todayPlanCache = null; lastSummary = null; }
+
+async function loadUserData(force){
+  if(!authUser) return;
+  if(userData.uid !== authUser.id){ resetUserData(); userData.uid = authUser.id; }
+  else if(!force && (userData.loaded || userData.loading)) return;
+  const uid = authUser.id;
+  userData.loading = true;
+  try {
+    const [s, f, a] = await Promise.all([
+      sb.from("practice_sessions").select("*").eq("user_id", uid).order("completed_at", { ascending:false }).limit(1000),
+      sb.from("favorites").select("kind,item_key,item_name").eq("user_id", uid),
+      sb.from("user_achievements").select("achievement_key,unlocked_at").eq("user_id", uid),
+    ]);
+    if(!authUser || authUser.id !== uid) return;   // logged out / switched while loading
+    const err = s.error || f.error || a.error;
+    if(err){ userData.available = false; userData.errorMsg = err.message || "Could not load your data."; }
+    else {
+      userData.available = true; userData.errorMsg = "";
+      userData.sessions = s.data || [];
+      userData.favoriteRows = f.data || [];
+      userData.favorites = new Set(userData.favoriteRows.map(r=>r.kind + ":" + r.item_key));
+      userData.achievements = new Map((a.data || []).map(r=>[r.achievement_key, r.unlocked_at]));
+    }
+    userData.loaded = true;
+  } catch(e){
+    console.warn("Could not load user data", e);
+    userData.available = false; userData.errorMsg = "Could not reach the server."; userData.loaded = true;
+  } finally {
+    userData.loading = false; todayPlanCache = null;
+    renderHome(); refreshActiveDataScreen();
+    if(userData.available) syncAchievements().catch(()=>{});   // silent backfill, no announcement
+  }
+}
+
+async function saveSessionRow(row){
+  if(!authUser) return { ok:false, reason:"logged-out" };
+  try {
+    const { data, error } = await sb.from("practice_sessions").insert({ ...row, user_id: authUser.id }).select().single();
+    if(error) return { ok:false, reason:"error", error };
+    userData.sessions.unshift(data); todayPlanCache = null;
+    return { ok:true, data };
+  } catch(e){ return { ok:false, reason:"error", error:e }; }
+}
+
+// Unlocks anything newly earned. Returns ONLY achievements inserted just now (those get the animation).
+async function syncAchievements(){
+  if(!authUser) return [];
+  const stats = computeStats(userData.sessions, todayStr());
+  const fresh = ACHIEVEMENTS.filter(a=>a.test(stats) && !userData.achievements.has(a.key));
+  if(!fresh.length) return [];
+  const { data, error } = await sb.from("user_achievements")
+    .upsert(fresh.map(a=>({ user_id:authUser.id, achievement_key:a.key })), { onConflict:"user_id,achievement_key", ignoreDuplicates:true }).select();
+  if(error){ console.warn("Could not save achievements", error); return []; }
+  (data || []).forEach(r=>userData.achievements.set(r.achievement_key, r.unlocked_at));
+  return (data || []).map(r=>ACHIEVEMENTS.find(a=>a.key === r.achievement_key)).filter(Boolean);
+}
+
+// ---------- favorites ----------
+function favoriteExerciseNames(){ return userData.favoriteRows.filter(r=>r.kind === "asana" || r.kind === "exercise").map(r=>r.item_key); }
+function setFavState(b){
+  const on = userData.favorites.has(b.dataset.kind + ":" + decodeURIComponent(b.dataset.key || ""));
+  b.classList.toggle("on", on); b.textContent = on ? "♥" : "♡"; b.setAttribute("aria-pressed", on ? "true" : "false");
+}
+function refreshFavButtons(){ document.querySelectorAll(".fav-btn").forEach(setFavState); }
+function makeFavButton(kind, key, name){
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "fav-btn"; b.dataset.kind = kind; b.dataset.key = encodeURIComponent(key); b.dataset.name = encodeURIComponent(name);
+  b.title = "Favorite"; b.setAttribute("aria-label", "Favorite " + name);
+  b.onclick = ev => { ev.stopPropagation(); toggleFavorite(kind, key, name); };
+  setFavState(b); return b;
+}
+function setStaticFav(id, kind, key, name){
+  const b = document.getElementById(id); if(!b) return;
+  b.dataset.kind = kind; b.dataset.key = encodeURIComponent(key); b.dataset.name = encodeURIComponent(name);
+  b.setAttribute("aria-label", "Favorite " + name);
+  b.onclick = ev => { ev.stopPropagation(); toggleFavorite(kind, key, name); };
+  setFavState(b);
+}
+function refreshPracticeFav(name){ if(name) setStaticFav("practice-fav", ALL_COUNTERS.includes(name) ? "exercise" : "asana", name, name); }
+async function toggleFavorite(kind, key, name){
+  if(!authUser){ toast("Log in to save favorites."); return; }
+  const id = kind + ":" + key, had = userData.favorites.has(id);
+  if(had){ userData.favorites.delete(id); userData.favoriteRows = userData.favoriteRows.filter(r=>!(r.kind === kind && r.item_key === key)); }
+  else { userData.favorites.add(id); userData.favoriteRows.push({ kind, item_key:key, item_name:name }); }
+  todayPlanCache = null; refreshFavButtons();
+  try {
+    const res = had
+      ? await sb.from("favorites").delete().eq("user_id", authUser.id).eq("kind", kind).eq("item_key", key)
+      : await sb.from("favorites").upsert({ user_id:authUser.id, kind, item_key:key, item_name:name }, { onConflict:"user_id,kind,item_key", ignoreDuplicates:true });
+    if(res.error) throw res.error;
+  } catch(e){
+    if(had){ userData.favorites.add(id); userData.favoriteRows.push({ kind, item_key:key, item_name:name }); }
+    else { userData.favorites.delete(id); userData.favoriteRows = userData.favoriteRows.filter(r=>!(r.kind === kind && r.item_key === key)); }
+    refreshFavButtons(); toast("Couldn't update favorites. Please try again.");
+  }
+  renderHome(); refreshActiveDataScreen();
+}
+
+// ---------- small UI helpers ----------
+let toastTimer = null;
+function toast(msg){
+  let el = document.getElementById("toast");
+  if(!el){ el = document.createElement("div"); el.id = "toast"; el.className = "toast"; el.setAttribute("role","status"); document.body.appendChild(el); }
+  el.textContent = msg; el.classList.add("show");
+  clearTimeout(toastTimer); toastTimer = setTimeout(()=>el.classList.remove("show"), 2800);
+}
+const enc = encodeURIComponent;
+const UI = {};
+function bindActions(el){
+  if(!el || el._p1bound) return; el._p1bound = true;
+  el.addEventListener("click", ev=>{
+    const t = ev.target.closest("[data-act]"); if(!t) return;
+    const fn = UI[t.dataset.act]; if(fn) fn(t.dataset.arg ? decodeURIComponent(t.dataset.arg) : "", t);
+  });
+}
+function greetingWord(){ const h = new Date().getHours(); return h < 12 ? "Good morning" : (h < 18 ? "Good afternoon" : "Good evening"); }
+function sessionTitle(s){
+  if(s.routine_name) return s.routine_name;
+  const names = (s.completed_exercises || []).filter(e=>e.status === "completed").map(e=>e.name);
+  const first = names[0] || "Practice";
+  const more = names.length > 1 ? " +" + (names.length - 1) : "";
+  return (s.session_type === "calorie" ? "Calorie Burner: " : "") + first + more;
+}
+function exerciseCount(s){ return (s.completed_exercises || []).filter(e=>e.status === "completed").length; }
+function statTile(val, lbl){ return '<div class="stat-tile"><div class="stat-val">' + val + '</div><div class="stat-lbl">' + lbl + '</div></div>'; }
+function activeScreenId(){ const a = document.querySelector(".screen.active"); return a ? a.id : ""; }
+function refreshActiveDataScreen(){
+  const id = activeScreenId();
+  if(id === "progress-screen") renderProgress();
+  else if(id === "history-screen") renderHistory();
+  else if(id === "favorites-screen") renderFavorites();
+}
+
+// ---------- Today's Practice ----------
+function getTodayPlan(){
+  const p = authProfile || {};
+  const key = JSON.stringify([todayStr(), p.yoga_level, p.goals, p.preferred_difficulty, p.session_duration, p.asana_hold_time,
+    p.exercise_rep_limit, p.pain_areas, p.avoided_exercises, userData.sessions.length, userData.sessions[0] && userData.sessions[0].id,
+    favoriteExerciseNames().sort()]);
+  if(todayPlanCache && todayPlanCache.key === key) return todayPlanCache.plan;
+  const plan = buildPracticePlan({ profile:p, avoidedSet:new Set(p.avoided_exercises || []), favs:new Set(favoriteExerciseNames()), sessions:userData.sessions });
+  todayPlanCache = { key, plan }; return plan;
+}
+function startTodayPractice(){
+  const plan = getTodayPlan();
+  if(!plan || !plan.steps.length){ toast("Update your preferences to build a practice."); return; }
+  startSequence("Today's Practice", plan.steps, { sessionType:"daily_plan", goal:plan.goalLabel });
+}
+
+// ---------- HOME dashboard ----------
+function renderHome(){
+  const box = document.getElementById("home-dashboard"); if(!box) return;
+  const label = document.getElementById("home-explore-label"), guest = document.getElementById("home-guest-banner");
+  if(!authUser){ box.style.display = "none"; box.innerHTML = ""; label.style.display = "none"; guest.style.display = "block"; return; }
+  guest.style.display = "none"; box.style.display = "block"; label.style.display = "block";
+
+  const today = todayStr(), name = (authProfile && authProfile.display_name) || "there";
+  const ready = userData.loaded;
+  const stats = computeStats(userData.sessions, today);
+  const sub = !ready ? "Loading your progress…"
+    : (!userData.available ? "Your history isn't available right now."
+    : (stats.sessions === 0 ? "Ready for your first practice?"
+    : (stats.practicedToday ? "You've practiced today. Nice work." : "Today's practice is ready when you are.")));
+
+  // Today's Practice card
+  let todayHtml;
+  if(!ready){
+    todayHtml = '<div class="today-meta">Preparing today\'s practice…</div>';
+  } else {
+    const plan = getTodayPlan();
+    if(!plan.steps.length){
+      todayHtml = '<div class="today-meta">No practice available</div><div class="today-why">' + escapeHtml(plan.reason) + '</div>' +
+        '<div class="nav-row"><button class="btn-secondary" data-act="prefs">Edit preferences</button></div>';
+    } else {
+      const firstPass = plan.names.slice(0, plan.passCount);
+      const shown = firstPass.slice(0, 4).map(escapeHtml).join(", ") + (firstPass.length > 4 ? " +" + (firstPass.length - 4) + " more" : "");
+      const why = [];
+      why.push("Built from your " + plan.levelLabel.toLowerCase() + " level" + (plan.goals.length ? " and " + plan.goals.join(", ") + " goal" + (plan.goals.length > 1 ? "s" : "") : "") + ".");
+      if(plan.rounds > 1) why.push("Repeats the sequence " + plan.rounds + " times to fill your time.");
+      else if(plan.estMinutes < plan.minutesTarget * 0.7) why.push("About " + plan.estMinutes + " min - that's all the matching exercises available for your settings.");
+      if(plan.safetySkipped) why.push("Skips " + plan.safetySkipped + " exercise" + (plan.safetySkipped > 1 ? "s" : "") + " from your pain areas and avoided list.");
+      if(plan.usedHistory) why.push("Rotates away from what you did recently.");
+      const detail = plan.steps.map(s=>'<div class="sess-row"><span>' + escapeHtml(s.name) + '</span><span class="tag">' + (s.type === "counter" ? s.target + " reps" : s.target + "s hold") + '</span></div>').join("");
+      todayHtml =
+        '<div class="today-meta">' + plan.estMinutes + ' min · ' + escapeHtml(plan.levelLabel) + ' · ' + escapeHtml(plan.goalLabel) + '</div>' +
+        '<div class="hint" style="margin-top:0">' + plan.names.length + ' steps: ' + shown + '</div>' +
+        '<div class="today-why">' + why.join(" ") + (hasPersonalization(authProfile) ? "" : " Set your preferences to personalize this.") + '</div>' +
+        (stats.practicedToday ? '<div class="today-why">You\'ve already practiced today - this is an extra session.</div>' : '') +
+        '<div class="nav-row"><button class="btn-primary" data-act="startToday">Start practice</button>' +
+        (hasPersonalization(authProfile) ? '' : '<button class="btn-secondary" data-act="prefs">Set preferences</button>') + '</div>' +
+        '<details class="plan-details"><summary>View plan</summary>' + detail + '</details>';
+    }
+  }
+
+  // Progress card
+  let progHtml;
+  if(!ready) progHtml = '<div class="hint">Loading…</div>';
+  else if(!userData.available) progHtml = '<div class="hint">Couldn\'t load your history. Check your connection, and that the Phase 1 database tables have been created.</div>';
+  else {
+    const latest = Array.from(userData.achievements.entries()).sort((a,b)=> a[1] < b[1] ? 1 : -1)[0];
+    const latestDef = latest && ACHIEVEMENTS.find(a=>a.key === latest[0]);
+    progHtml = '<div class="stat-grid">' + statTile(stats.currentStreak, "day streak") + statTile(stats.completeSessions, "sessions") +
+      statTile(fmtTotal(stats.totalSeconds), "practice time") + statTile(stats.uniquePoses, "different poses") + '</div>' +
+      (latestDef ? '<div class="hint">Latest achievement: ' + latestDef.icon + ' ' + escapeHtml(latestDef.title) + '</div>' : '') +
+      '<div class="nav-row"><button class="btn-secondary" data-act="openProgress">View progress</button></div>';
+  }
+
+  // Quick start + recent + favorites
+  const last = userData.sessions[0];
+  const repeat = last && ROUTINES[last.routine_name] ? '<button class="btn-secondary" data-act="startRoutine" data-arg="' + enc(last.routine_name) + '">Repeat ' + escapeHtml(last.routine_name.split(" (")[0]) + '</button>' : "";
+  const quick = '<div class="quick-row">' + repeat +
+    '<button class="btn-secondary" data-act="freeExercise">Free exercise</button>' +
+    '<button class="btn-secondary" data-act="routines">Workout routines</button>' +
+    '<button class="btn-secondary" data-act="chat">Ask the assistant</button></div>';
+
+  const recent = userData.sessions.slice(0, 3);
+  const recentHtml = recent.length
+    ? recent.map(s=>'<div class="sess-row"><span>' + escapeHtml(sessionTitle(s)) + '<div class="tag">' + relDay(s.local_date, today) + ' · ' + fmtTotal(s.duration_seconds) + '</div></span>' +
+        '<span class="badge ' + (s.completion_status === "complete" ? "badge-ok" : "badge-part") + '">' + (s.completion_status === "complete" ? "Complete" : "Partial") + '</span></div>').join("") +
+      '<div class="nav-row"><button class="btn-secondary" data-act="openHistory">View history</button></div>'
+    : '<div class="hint">' + (ready && userData.available ? "No sessions yet. Finished practices will show up here." : "—") + '</div>';
+
+  const favRows = userData.favoriteRows.slice(-4).reverse();
+  const favHtml = favRows.length
+    ? favRows.map(r=>'<div class="sess-row"><button class="auth-link" data-act="openFav" data-arg="' + enc(r.kind + "|" + r.item_key) + '">' + escapeHtml(r.item_name) + '</button><span class="tag">' + ({asana:"Asana",exercise:"Exercise",routine:"Routine",kriya:"Learning"}[r.kind] || "") + '</span></div>').join("") +
+      '<div class="nav-row"><button class="btn-secondary" data-act="openFavorites">All favorites</button></div>'
+    : '<div class="hint">Tap ♡ next to any pose, exercise or routine to keep it here.</div>';
+
+  box.innerHTML =
+    '<div class="dash-hero"><div><div class="dash-greet">' + greetingWord() + ', ' + escapeHtml(name) + '</div><div class="dash-sub">' + sub + '</div></div>' +
+    (ready && userData.available ? '<div class="streak-chip">🔥 ' + stats.currentStreak + '<small>day streak</small></div>' : '') + '</div>' +
+    '<div class="dash-grid"><div class="dash-card today-card"><h3>Today\'s Practice</h3>' + todayHtml + '</div>' +
+    '<div class="dash-card"><h3>Your progress</h3>' + progHtml + '</div></div>' +
+    '<div class="section-label">Quick start</div>' + quick +
+    '<div class="dash-grid dash-grid-even"><div class="dash-card"><h3>Recent practice</h3>' + recentHtml + '</div>' +
+    '<div class="dash-card"><h3>Favorites</h3>' + favHtml + '</div></div>';
+}
+
+// ---------- PROGRESS screen ----------
+window.showProgressScreen = async function(){
+  if(!authUser){ showAuthScreen("login"); return; }
+  goToScreen("progress"); renderProgress();
+  if(!userData.loaded) await loadUserData();
+};
+function renderProgress(){
+  const body = document.getElementById("progress-body"); if(!body) return;
+  if(!authUser){ body.innerHTML = '<div class="empty-state">Log in to see your progress.</div>'; return; }
+  if(!userData.loaded){ body.innerHTML = '<div class="empty-state">Loading…</div>'; return; }
+  if(!userData.available){ body.innerHTML = '<div class="empty-state">Couldn\'t load your history' + (userData.errorMsg ? " (" + escapeHtml(userData.errorMsg) + ")" : "") + '.</div>'; return; }
+  const today = todayStr(), st = computeStats(userData.sessions, today);
+  const tiles = statTile(st.currentStreak, "current streak (days)") + statTile(st.longestStreak, "longest streak (days)") + statTile(st.completeSessions, "sessions completed") +
+    statTile(fmtTotal(st.totalSeconds), "total practice time") + statTile(st.posesPracticed, "poses practiced") + statTile(st.uniquePoses, "different poses") +
+    statTile(st.exercisesCompleted, "exercises completed") + statTile(st.totalReps, "total repetitions") + statTile(st.routinesCompleted, "routines completed");
+  const ach = ACHIEVEMENTS.map(a=>{
+    const at = userData.achievements.get(a.key);
+    return '<div class="ach' + (at ? "" : " locked") + '"><span class="ico">' + a.icon + '</span><div><div class="ach-title">' + escapeHtml(a.title) + '</div><div class="tag">' + escapeHtml(a.desc) +
+      (at ? " · unlocked " + new Date(at).toLocaleDateString(undefined, { month:"short", day:"numeric" }) : "") + '</div></div></div>';
+  }).join("");
+  const topPoses = topEntries(st.poseCounts, 5), topRoutines = topEntries(st.routineCounts, 3);
+  const list = arr => arr.length ? arr.map(([n,c])=>'<div class="sess-row"><span>' + escapeHtml(n) + '</span><span class="tag">' + c + 'x</span></div>').join("") : '<div class="hint">Nothing yet.</div>';
+  const recent = userData.sessions.slice(0, 5).map(s=>'<div class="sess-row"><span>' + escapeHtml(sessionTitle(s)) + '<div class="tag">' + relDay(s.local_date, today) + ' · ' + fmtTotal(s.duration_seconds) + '</div></span><span class="badge ' + (s.completion_status === "complete" ? "badge-ok" : "badge-part") + '">' + (s.completion_status === "complete" ? "Complete" : "Partial") + '</span></div>').join("");
+  body.innerHTML =
+    '<div class="stat-grid stat-grid-3">' + tiles + '</div>' +
+    '<div class="hint">A day counts toward your streak when you finish a routine, or finish an exercise target in a free session lasting at least 2 minutes. Opening the app doesn\'t count, and a missed day resets the current streak.</div>' +
+    '<div class="section-label">Achievements</div><div class="ach-grid">' + ach + '</div>' +
+    '<div class="section-label">Most practiced poses</div>' + list(topPoses) +
+    '<div class="section-label">Most practiced routines</div>' + list(topRoutines) +
+    '<div class="section-label">Recent sessions</div>' + (recent || '<div class="hint">No sessions yet.</div>') +
+    '<div class="nav-row"><button class="btn-secondary" data-act="openHistory">Full history</button><button class="btn-secondary" data-act="openFavorites">My favorites</button></div>';
+}
+
+// ---------- HISTORY screen ----------
+window.showHistoryScreen = async function(){
+  if(!authUser){ showAuthScreen("login"); return; }
+  historyShown = 20; goToScreen("history"); renderHistory();
+  if(!userData.loaded) await loadUserData();
+};
+function exerciseLine(e){
+  let t = escapeHtml(e.name) + " - ";
+  if(e.status === "substituted") return t + "replaced after a pain report";
+  if(e.kind === "exercise") t += e.reps + " reps" + (e.target ? " (target " + e.target + ")" : "");
+  else t += "held " + e.hold_seconds + "s" + (e.target ? " (target " + e.target + "s)" : "");
+  if(e.status === "incomplete") t += ", not finished";
+  if(e.form_pct !== null && e.form_pct !== undefined) t += " · in position " + e.form_pct + "% of tracked time";
+  return t;
+}
+function renderHistory(){
+  const body = document.getElementById("history-body"); if(!body) return;
+  if(!authUser){ body.innerHTML = '<div class="empty-state">Log in to see your history.</div>'; return; }
+  if(!userData.loaded){ body.innerHTML = '<div class="empty-state">Loading…</div>'; return; }
+  if(!userData.available){ body.innerHTML = '<div class="empty-state">Couldn\'t load your history.</div>'; return; }
+  if(!userData.sessions.length){ body.innerHTML = '<div class="empty-state">No sessions yet. When you finish a practice, it is saved here.</div>'; return; }
+  const rows = userData.sessions.slice(0, historyShown).map(s=>{
+    const when = new Date(s.completed_at).toLocaleString(undefined, { month:"short", day:"numeric", hour:"numeric", minute:"2-digit" });
+    const subs = ((s.metadata && s.metadata.substitutions) || []).map(x=>'<div class="tag">Pain reported on ' + escapeHtml(x.from) + ' - replaced with ' + escapeHtml(x.to) + '.</div>').join("");
+    return '<details class="hist-item"><summary><div><b>' + escapeHtml(sessionTitle(s)) + '</b><div class="tag">' + when + ' · ' + fmtTotal(s.duration_seconds) + ' · ' + exerciseCount(s) + ' exercises' + (s.counts_for_streak ? ' · 🔥 counted for streak' : '') + '</div></div>' +
+      '<span class="badge ' + (s.completion_status === "complete" ? "badge-ok" : "badge-part") + '">' + (s.completion_status === "complete" ? "Complete" : "Partial") + '</span></summary>' +
+      '<div class="hist-detail">' + (s.completed_exercises || []).map(e=>'<div class="sess-row"><span>' + exerciseLine(e) + '</span></div>').join("") + subs + '</div></details>';
+  }).join("");
+  body.innerHTML = rows + (userData.sessions.length > historyShown ? '<div class="nav-row"><button class="btn-secondary" data-act="histMore">Show more</button></div>' : "");
+}
+
+// ---------- FAVORITES screen ----------
+window.showFavoritesScreen = async function(){
+  if(!authUser){ showAuthScreen("login"); return; }
+  goToScreen("favorites"); renderFavorites();
+  if(!userData.loaded) await loadUserData();
+  if(!kriyaList.length && userData.favoriteRows.some(r=>r.kind === "kriya")){ await loadKriyas(); renderFavorites(); }
+};
+function renderFavorites(){
+  const body = document.getElementById("favorites-body"); if(!body) return;
+  if(!authUser){ body.innerHTML = '<div class="empty-state">Log in to save favorites.</div>'; return; }
+  if(!userData.loaded){ body.innerHTML = '<div class="empty-state">Loading…</div>'; return; }
+  if(!userData.favoriteRows.length){ body.innerHTML = '<div class="empty-state">No favorites yet. Tap ♡ next to a pose, exercise, routine or Kriya to save it.</div>'; return; }
+  const groups = [["asana","Asanas"],["exercise","Exercises"],["routine","Routines"],["kriya","Learning"]];
+  body.innerHTML = groups.map(([kind,title])=>{
+    const rows = userData.favoriteRows.filter(r=>r.kind === kind);
+    if(!rows.length) return "";
+    return '<div class="section-label">' + title + '</div>' + rows.map(r=>{
+      const gone = (kind === "asana" && !ALL_POSES.includes(r.item_key) && !ALL_COUNTERS.includes(r.item_key)) || (kind === "exercise" && !ALL_COUNTERS.includes(r.item_key)) ||
+                   (kind === "routine" && !ROUTINES[r.item_key]) || (kind === "kriya" && kriyaList.length > 0 && !kriyaList.some(k=>String(k.id) === r.item_key));
+      return '<div class="fav-row"><button class="pose-btn" ' + (gone ? 'disabled style="opacity:.5;cursor:default"' : 'data-act="openFav" data-arg="' + enc(kind + "|" + r.item_key) + '"') + '><span>' + escapeHtml(r.item_name) + '</span><span class="tag">' + (gone ? "no longer available" : (kind === "kriya" ? "Open" : "Start")) + '</span></button>' +
+        '<button type="button" class="fav-btn on" data-act="unfav" data-arg="' + enc(kind + "|" + r.item_key + "|" + r.item_name) + '" aria-label="Remove ' + escapeHtml(r.item_name) + ' from favorites">♥</button></div>';
+    }).join("");
+  }).join("");
+}
+
+// ---------- SUMMARY screen ----------
+async function presentSummary(result){
+  lastSummary = { result, saveState: authUser ? "saving" : "guest", saved:false, newAch:[], stats:null };
+  renderSummary(); goToScreen("summary");
+  if(authUser) await persistSummary();
+}
+async function persistSummary(){
+  const ls = lastSummary; if(!ls || ls.saved) return;
+  ls.saveState = "saving"; renderSummary();
+  const res = await saveSessionRow(ls.result.row);
+  if(lastSummary !== ls) return;
+  if(!res.ok){ ls.saveState = "error"; renderSummary(); return; }
+  ls.saved = true; ls.saveState = "saved";
+  ls.stats = computeStats(userData.sessions, todayStr());
+  ls.newAch = await syncAchievements();
+  if(lastSummary === ls) renderSummary();
+  renderHome();
+}
+function renderSummary(){
+  const ls = lastSummary; if(!ls) return;
+  const r = ls.result, row = r.row, set = (id, html) => { document.getElementById(id).innerHTML = html; };
+  const complete = row.completion_status === "complete";
+  set("sum-kicker", complete ? "PRACTICE COMPLETE 🎉" : "SESSION ENDED");
+  set("sum-time", fmtClock(row.duration_seconds));
+  set("sum-sub", r.completed + " exercise" + (r.completed === 1 ? "" : "s") + (r.asanas || r.counters ? " · " + r.asanas + " asana" + (r.asanas === 1 ? "" : "s") + " · " + r.counters + " exercise" + (r.counters === 1 ? "" : "s") : ""));
+  let tiles = "";
+  if(r.longestHold > 0) tiles += statTile(r.longestHold + "s", "longest hold");
+  if(row.total_reps > 0) tiles += statTile(row.total_reps, "total reps");
+  if(row.metadata && row.metadata.calories_estimate) tiles += statTile(row.metadata.calories_estimate.toFixed(2), "kcal (estimate)");
+  if(r.formAvg !== null) tiles += statTile(r.formAvg + "%", "time in correct position");
+  if(ls.stats) tiles += statTile(ls.stats.currentStreak, "day streak");
+  set("sum-stats", tiles);
+  let notes = "";
+  (row.metadata.substitutions || []).forEach(x=>{
+    notes += '<div class="hint">Pain reported on ' + escapeHtml(x.from) + ' - replaced with ' + escapeHtml(x.to) + (x.later_steps_replaced ? ' (also in ' + x.later_steps_replaced + ' later step' + (x.later_steps_replaced > 1 ? "s" : "") + ')' : '') + '.</div>';
+  });
+  if(r.formAvg !== null) notes += '<div class="hint">Form figures show how much of the time the camera could see you that your joints were inside each pose\'s target range, across ' + r.formCount + ' hold' + (r.formCount === 1 ? "" : "s") + '.</div>';
+  if(!complete) notes += '<div class="hint">You ended this routine early, so it\'s saved as partial and doesn\'t count toward your streak.</div>';
+  else if(!row.counts_for_streak) notes += '<div class="hint">This free session didn\'t count toward your streak (it needs a finished exercise target and at least 2 minutes).</div>';
+  set("sum-notes", notes);
+  set("sum-ach", ls.newAch.map(a=>'<div class="ach fresh"><span class="ico">' + a.icon + '</span><div><div class="ach-title">Achievement unlocked: ' + escapeHtml(a.title) + '</div><div class="tag">' + escapeHtml(a.desc) + '</div></div></div>').join(""));
+  const save = { saving:'Saving your session…', saved:'Session saved to your history.', guest:'Log in to save sessions to your history. <button class="auth-link" data-act="sumLogin">Log in</button>',
+                 error:'Couldn\'t save this session. <button class="auth-link" data-act="retrySave">Try again</button>' }[ls.saveState];
+  set("sum-save", save);
+}
+
+// ---------- practice session lifecycle glue ----------
+function stopCameraNow(){
+  if(rafId) cancelAnimationFrame(rafId);
+  if(stream) stream.getTracks().forEach(t=>t.stop());
+  stream = null;
+}
+// Called from the loop when the last step of a sequence finishes.
+function finishPracticeFromLoop(){
+  stopCameraNow();
+  const result = recFinalize("completed-all");
+  if(result) presentSummary(result);
+}
+// Called when the user navigates away from the practice screen by any route other than Stop.
+function leavePracticeScreen(){
+  stopCameraNow();
+  const result = (rec && !rec.done) ? recFinalize("left") : null;
+  if(result && authUser){
+    saveSessionRow(result.row).then(r=>{
+      if(!r.ok) return;
+      toast("Session saved to your history.");
+      syncAchievements().then(a=>{ if(a.length) toast("Achievement unlocked: " + a[0].title); });
+      renderHome();
+    });
+  }
+}
+
+// ---------- data-act handlers ----------
+Object.assign(UI, {
+  startToday: ()=>startTodayPractice(),
+  prefs: ()=>showPersonalizeScreen(false),
+  openProgress: ()=>showProgressScreen(),
+  openHistory: ()=>showHistoryScreen(),
+  openFavorites: ()=>showFavoritesScreen(),
+  freeExercise: ()=>showFreeExercise(),
+  routines: ()=>goToScreen("routines"),
+  chat: ()=>showChat(),
+  histMore: ()=>{ historyShown += 20; renderHistory(); },
+  startRoutine: name=>{ if(ROUTINES[name]) startSequence(name, ROUTINES[name], { sessionType:"preset_routine" }); },
+  openFav: arg=>{
+    const i = arg.indexOf("|"), kind = arg.slice(0, i), key = arg.slice(i + 1);
+    if(kind === "asana") startSingle(key, ALL_POSES.includes(key) ? ALL_POSES : ALL_COUNTERS);
+    else if(kind === "exercise") startSingle(key, ALL_COUNTERS);
+    else if(kind === "routine") UI.startRoutine(key);
+    else if(kind === "kriya"){ if(kriyaList.some(k=>String(k.id) === key)) showLearnDetail(kriyaList.find(k=>String(k.id) === key).id); else toast("That Kriya isn't available right now."); }
+  },
+  unfav: arg=>{ const [kind, key, ...rest] = arg.split("|"); toggleFavorite(kind, key, rest.join("|")); },
+  sumLogin: ()=>showAuthScreen("login"),
+  retrySave: ()=>persistSummary(),
+  sumProgress: ()=>{ if(authUser) showProgressScreen(); else showAuthScreen("login"); },
+  sumHome: ()=>goToScreen("home"),
+  sumAgain: ()=>{
+    const l = lastLaunch; if(!l){ goToScreen("home"); return; }
+    if(l.kind === "sequence") startSequence(l.name, l.steps, { sessionType:l.sessionType, goal:l.goal });
+    else if(l.kind === "calorie") startCalorieMode(l.name);
+    else startSingle(l.name, l.list);
+  },
+});
+["home-dashboard","progress-body","history-body","favorites-body","summary-screen"].forEach(id=>bindActions(document.getElementById(id)));
 </script>
 </body>
 </html>
