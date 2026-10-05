@@ -188,6 +188,12 @@
     .sum-time { font-size:2.4rem; }
     .right-panel { min-width:0; width:100%; }
   }
+  .chip { display:inline-block; font-size:.7rem; border:1px solid var(--border); color:var(--text-dim); border-radius:10px; padding:2px 9px; font-weight:600; }
+  .chip-ai { color:var(--accent); border-color:var(--accent); }
+  .why-row { padding:6px 0; border-bottom:1px solid #2a3145; font-size:.85rem; }
+  .why-row .tag { font-size:.75rem; color:var(--text-dim); margin-top:2px; font-weight:400; }
+  .insight-card { background:#161b28; border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-top:12px; text-align:left; }
+  .insight-card p { margin:8px 0 0 0; font-size:.92rem; line-height:1.5; }
   @media (prefers-reduced-motion:reduce) { .ach.fresh { animation:none; } .toast { transition:none; } }
 </style>
 </head>
@@ -588,6 +594,7 @@
       <div class="sum-sub" id="sum-sub"></div>
       <div class="sum-stats" id="sum-stats"></div>
       <div id="sum-notes"></div>
+      <div id="sum-insight"></div>
       <div id="sum-ach"></div>
       <div class="sum-save" id="sum-save"></div>
       <div class="nav-row sum-actions">
@@ -677,8 +684,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 //                                sb_secret_... key here or anywhere
 //                                in this file.
 // ============================================================
-const SUPABASE_URL = "https://dkptupmgebwaoujmwmcq.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_iOmXS1j6_xoZGMWlWZPk1g_7eYG1Jn1";
+const SUPABASE_URL = "https://YOUR_PROJECT_REF.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_YOUR_KEY_HERE";
 const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
 let authUser = null;      // Supabase auth user object, or null when logged out
@@ -846,49 +853,171 @@ function scoreUnit(unit, ctx){
   let s = 0;
   const tags = new Set(unit.flatMap(n=>POSE_GOALS[n] || []));
   ctx.goals.forEach(g=>{ if(tags.has(g)) s += 3; });                                   // goal match
+  if(ctx.neglected) ctx.neglected.forEach(g=>{ if(tags.has(g)) s += 1.5; });           // goals with nothing recent in history
   s -= Math.abs(LEVEL_ORDER.indexOf(DIFFICULTY[unit[0]]) - ctx.tier);                  // difficulty preference
   if(unit.some(n=>ctx.favs.has(n))) s += 2.5;                                          // favorites
   const recent = Math.max(...unit.map(n=>ctx.recent[n] || 0));
   s -= 2 * recent;                                                                     // variety: rotate away from recent sessions
   if(recent === 0 && unit.some(n=>ctx.ever.has(n))) s += 0.5;                          // familiarity: practiced before, not recently
+  if(ctx.softAvoid && unit.some(n=>ctx.softAvoid.has(n))) s -= 1.5;                    // similar to exercises the user keeps replacing
   s += hash01(unit[0] + "|" + ctx.dayKey) * 0.6;                                       // small deterministic daily rotation
   return s;
 }
-function buildPracticePlan(opts){
-  const o = opts || {};
+
+// ---------- simple, deterministic pattern detection (no ML) ----------
+function computePatterns(sessions, profile, favNames){
+  const out = { sessionCount:sessions.length, recentNames:[], frequent:[], neglectedGoals:[], neglectedWindow:0,
+    repeatedSubs:[], substitutedGroups:[], softAvoid:new Set(), medianMinutes:null, durationNote:null, variety:null };
+  const done = s => (Array.isArray(s.completed_exercises) ? s.completed_exercises : []).filter(e=>e && e.status === "completed");
+  const rn = [];
+  sessions.slice(0, 3).forEach(s=>done(s).forEach(e=>{ if(!rn.includes(e.name)) rn.push(e.name); }));
+  out.recentNames = rn.slice(0, 8);
+  const counts = {};
+  sessions.forEach(s=>done(s).forEach(e=>{ counts[e.name] = (counts[e.name]||0) + 1; }));
+  out.frequent = topEntries(counts, 5).filter(([,c])=>c >= 2);
+  const goals = normGoals(profile);
+  if(goals.length && sessions.length >= 3){
+    const win = sessions.slice(0, 10), tags = new Set();
+    win.forEach(s=>done(s).forEach(e=>(POSE_GOALS[e.name] || []).forEach(t=>tags.add(t))));
+    out.neglectedGoals = goals.filter(g=>!tags.has(g)); out.neglectedWindow = win.length;
+  }
+  const subCount = {}, subbed = new Set();
+  sessions.forEach(s=>((s.metadata && s.metadata.substitutions) || []).forEach(x=>{
+    if(x && x.from){ subCount[x.from] = (subCount[x.from]||0) + 1; subbed.add(x.from); }
+  }));
+  out.repeatedSubs = Object.entries(subCount).filter(([,c])=>c >= 2).sort((a,b)=>b[1]-a[1] || (a[0] < b[0] ? -1 : 1)).map(([name,count])=>({ name, count }));
+  Object.entries(ISSUE_AVOID_MAP).forEach(([issue, group])=>{
+    const hit = group.filter(n=>subbed.has(n));
+    if(hit.length >= 2){ out.substitutedGroups.push({ issue, names:hit }); group.forEach(n=>out.softAvoid.add(n)); }
+  });
+  const durs = sessions.filter(s=>s.completion_status === "complete").slice(0, 10).map(s=>s.duration_seconds || 0).filter(d=>d > 0).sort((a,b)=>a-b);
+  if(durs.length >= 3){
+    out.medianMinutes = Math.max(1, Math.round(durs[Math.floor(durs.length/2)] / 60));
+    const pref = profile && profile.session_duration;
+    if(pref && Math.abs(out.medianMinutes - pref) / pref >= 0.4) out.durationNote = { median:out.medianMinutes, preference:pref };
+  }
+  const last5 = sessions.slice(0, 5);
+  if(last5.length >= 3){
+    const names = []; last5.forEach(s=>done(s).forEach(e=>names.push(e.name)));
+    if(names.length){ const unique = new Set(names).size; out.variety = { unique, total:names.length, sessions:last5.length, low: unique / names.length < 0.4 }; }
+  }
+  return out;
+}
+function patternLines(p){
+  const L = [];
+  if(!p.sessionCount) return L;
+  if(p.recentNames.length) L.push("Recently practiced: " + p.recentNames.slice(0, 4).join(", ") + (p.recentNames.length > 4 ? " +" + (p.recentNames.length - 4) + " more" : "") + ".");
+  if(p.frequent.length) L.push("Most frequent: " + p.frequent.slice(0, 3).map(([n,c])=>n + " (" + c + "x)").join(", ") + ".");
+  if(p.neglectedGoals.length) L.push("Nothing tagged for your " + p.neglectedGoals.join(" / ") + " goal in your last " + p.neglectedWindow + " sessions.");
+  p.repeatedSubs.slice(0, 3).forEach(x=>L.push("You've replaced " + x.name + " " + x.count + " times after pain reports."));
+  p.substitutedGroups.forEach(g=>L.push("You've replaced several " + g.issue.toLowerCase() + "-related exercises (" + g.names.slice(0, 3).join(", ") + "); similar ones rank lower in Today's Practice."));
+  if(p.durationNote) L.push("Your recent sessions ran about " + p.durationNote.median + " min; your preference is " + p.durationNote.preference + " min.");
+  if(p.variety) L.push(p.variety.low
+    ? "Your last " + p.variety.sessions + " sessions repeated a lot: " + p.variety.unique + " different exercises across " + p.variety.total + "."
+    : "Variety: " + p.variety.unique + " different exercises across your last " + p.variety.sessions + " sessions.");
+  return L;
+}
+
+// ---------- planner: shared inputs -> deterministic plan, or validated AI selection ----------
+function preparePlanInputs(o){
   const profile = o.profile || {};
   const minutes = o.minutes || profile.session_duration || 15;
   const holdSec = profile.asana_hold_time || 15;
   const repTarget = profile.exercise_rep_limit || 10;
   const sessions = o.sessions || [];
+  const favs = o.favs || new Set();
   const ex = exclusionSets(profile, o.avoidedSet);
   const goals = o.goal ? [String(o.goal).toLowerCase()] : normGoals(profile);
+  const patterns = computePatterns(sessions, profile, [...favs]);
   const ever = new Set();
   sessions.forEach(s=>(s.completed_exercises || []).forEach(e=>{ if(e && e.status === "completed") ever.add(e.name); }));
-  const ctx = { goals, tier:preferredTier(profile), favs:o.favs || new Set(), recent:recentUsage(sessions), ever, dayKey:o.dayKey || todayStr() };
-
+  const ctx = { goals, tier:preferredTier(profile), favs, recent:recentUsage(sessions), ever, dayKey:o.dayKey || todayStr(),
+                neglected:new Set(patterns.neglectedGoals), softAvoid:patterns.softAvoid };
   const everyName = [...ALL_POSES, ...ALL_COUNTERS];
   const safetySkipped = everyName.filter(n=>ex.allowed.has(DIFFICULTY[n]) && (ex.painAvoid.has(n) || ex.avoided.has(n))).length;
   const eligible = exerciseUnits().filter(u=>u.every(n=>isEligible(n, ex)));
-
   const budget = minutes * 60;
   const isCtr = n => ALL_COUNTERS.includes(n);
   const unitSeconds = u => u.reduce((t,n)=> t + (isCtr(n) ? repTarget*3 : holdSec) + SEC_OVERHEAD, 0);
   const counterShare = goals.some(g=>g === "strength" || g === "general fitness") ? 0.4 : (goals.length ? 0.15 : 0.25);
   const scored = eligible.map(u=>({ u, s:scoreUnit(u, ctx), t:unitSeconds(u), counter:isCtr(u[0]) }))
     .sort((a,b)=> b.s - a.s || (a.u[0] < b.u[0] ? -1 : 1));
+  return { profile, minutes, holdSec, repTarget, sessions, favs, ex, goals, patterns, ctx, safetySkipped, budget, isCtr, unitSeconds, counterShare, scored };
+}
+function reasonFacts(unit, pos, total, inp, minDiffIdx){
+  const R = [], c = inp.ctx, ctr = inp.isCtr(unit[0]);
+  const tags = new Set(unit.flatMap(n=>POSE_GOALS[n] || []));
+  const gm = c.goals.filter(g=>tags.has(g));
+  if(gm.length) R.push({ code:"goal_match", text:"Supports your " + gm[0] + " goal" });
+  const ng = [...c.neglected].filter(g=>tags.has(g));
+  if(ng.length) R.push({ code:"neglected_goal", text:"You haven't trained " + ng[0] + " in your last " + inp.patterns.neglectedWindow + " sessions" });
+  if(unit.some(n=>c.favs.has(n))) R.push({ code:"favorite", text:"One of your favorites" });
+  if(inp.sessions.length > 0 && unit.every(n=>!(c.recent[n] > 0))){
+    const k = Math.min(6, inp.sessions.length);
+    R.push({ code:"not_recent", text:"Not in your last " + (k === 1 ? "session" : k + " sessions") });
+  }
+  const pref = inp.profile.preferred_difficulty;
+  if(pref && LEVEL_ORDER.indexOf(DIFFICULTY[unit[0]]) === c.tier) R.push({ code:"difficulty_fit", text:cap(DIFFICULTY[unit[0]]) + " level, matching your " + String(pref).toLowerCase() + " preference" });
+  if(pos === 0 && !ctr && LEVEL_ORDER.indexOf(DIFFICULTY[unit[0]]) === minDiffIdx) R.push({ code:"warmup", text:"A gentle way to start" });
+  if(pos === total - 1 && !ctr && tags.has("relaxation")) R.push({ code:"cooldown", text:"A calming pose to finish" });
+  if(ctr) R.push({ code:"variety", text:"Adds a rep-based exercise for variety" });
+  if(unit.length > 1) R.push({ code:"pair", text:"Both sides are included to stay balanced" });
+  return R;
+}
+const REASON_CODES = new Set(["goal_match","neglected_goal","favorite","not_recent","difficulty_fit","warmup","cooldown","variety","pair"]);
 
+// `units` is an ordered array of units (a unit = [name] or [rightName, leftName]).
+function assemblePlan(inp, units, source, aiCodes){
+  const onePass = units.flat();
+  const secOf = n => (inp.isCtr(n) ? inp.repTarget*3 : inp.holdSec) + SEC_OVERHEAD;
+  const passSec = onePass.reduce((t,n)=>t + secOf(n), 0);
+  // The library is finite: if one pass is well short of the requested time, repeat the same ordered
+  // sequence as extra rounds (max 3) instead of silently handing back a much shorter session.
+  let rounds = 1;
+  while(rounds < 3 && passSec * rounds < inp.budget * 0.7 && passSec * (rounds + 1) <= inp.budget * 1.08) rounds++;
+  const names = []; for(let r = 0; r < rounds; r++) names.push(...onePass);
+  const steps = names.map(n=> inp.isCtr(n) ? counterStep(n, inp.repTarget) : holdStep(n, inp.holdSec));
+  const estMinutes = Math.max(1, Math.round(passSec * rounds / 60));
+  const poseIdx = units.filter(u=>!inp.isCtr(u[0])).map(u=>LEVEL_ORDER.indexOf(DIFFICULTY[u[0]]));
+  const minDiffIdx = poseIdx.length ? Math.min(...poseIdx) : 0;
+  const why = {};
+  units.forEach((u,i)=>{
+    const facts = reasonFacts(u, i, units.length, inp, minDiffIdx);
+    let chosen;
+    if(aiCodes && aiCodes[i]){                       // AI may only pick among reasons the app can verify from real data
+      const want = new Set(aiCodes[i]);
+      const verified = facts.filter(f=>want.has(f.code));
+      chosen = verified.length ? verified : facts.slice(0, 2);
+    } else chosen = facts.slice(0, 3);
+    const texts = chosen.map(f=>f.text);
+    if(!texts.length) texts.push("Fits your level and session length");
+    u.forEach(n=>{ why[n] = texts; });
+  });
+  const P = inp.patterns, G = inp.goals, lines = [];
+  lines.push("Chosen for your " + levelOf(inp.profile) + " level" + (G.length ? " and " + G.join(", ") + " goal" + (G.length > 1 ? "s" : "") : "") + ".");
+  lines.push("Sized for your " + inp.minutes + "-minute preference (about " + estMinutes + " min" + (rounds > 1 ? ", repeating the sequence " + rounds + " times" : "") + ").");
+  if(inp.sessions.length) lines.push("Rotates away from what you did in your last " + Math.min(6, inp.sessions.length) + " session" + (inp.sessions.length === 1 ? "" : "s") + ".");
+  if(P.neglectedGoals.length) lines.push("Leans toward " + P.neglectedGoals.join(" / ") + " - nothing tagged for it in your last " + P.neglectedWindow + " sessions.");
+  if(P.substitutedGroups.length) lines.push("Goes easy on exercises similar to ones you've replaced after pain reports.");
+  if(inp.safetySkipped) lines.push("Skips " + inp.safetySkipped + " exercise" + (inp.safetySkipped > 1 ? "s" : "") + " from your pain areas and avoided list.");
+  if(source === "ai") lines.push("Selection and order were fine-tuned by AI, using only exercises that passed those safety filters.");
+  return { title:"Today's Practice", goalLabel:(inp.profile.goals || []).find(g=>g !== "Other") || "General fitness",
+    minutesTarget:inp.minutes, levelLabel:cap(levelOf(inp.profile)), safetySkipped:inp.safetySkipped, usedHistory:inp.sessions.length > 0, goals:G,
+    steps, names, rounds, passCount:onePass.length, estMinutes, reason:"", source, why, whyOverall:lines };
+}
+function buildPracticePlan(opts){
+  const inp = preparePlanInputs(opts || {});
   const chosen = []; let used = 0, counterUsed = 0;
-  for(const c of scored){
+  for(const c of inp.scored){
     if(chosen.length >= 30) break;
-    if(used + c.t > budget * 1.08) continue;
-    if(c.counter && counterUsed + c.t > budget * counterShare) continue;
+    if(used + c.t > inp.budget * 1.08) continue;
+    if(c.counter && counterUsed + c.t > inp.budget * inp.counterShare) continue;
     chosen.push(c); used += c.t; if(c.counter) counterUsed += c.t;
   }
-  const base = { title:"Today's Practice", goalLabel:(profile.goals || []).find(g=>g !== "Other") || "General fitness",
-    minutesTarget:minutes, levelLabel:cap(levelOf(profile)), safetySkipped, usedHistory:sessions.length > 0, goals };
+  const base = { title:"Today's Practice", goalLabel:(inp.profile.goals || []).find(g=>g !== "Other") || "General fitness",
+    minutesTarget:inp.minutes, levelLabel:cap(levelOf(inp.profile)), safetySkipped:inp.safetySkipped, usedHistory:inp.sessions.length > 0, goals:inp.goals,
+    source:"deterministic", why:{}, whyOverall:[] };
   if(chosen.reduce((n,c)=>n + c.u.length, 0) < 3) return { ...base, steps:[], names:[], estMinutes:0, reason:"Your current level, pain areas and avoided list leave too few exercises to build a session." };
-
   // Order: easiest poses first, rep exercises after the poses, one calming pose to finish.
   const tagsOf = u => new Set(u.flatMap(n=>POSE_GOALS[n] || []));
   const closing = chosen.filter(c=>!c.counter && tagsOf(c.u).has("relaxation")).sort((a,b)=>b.s-a.s)[0] || null;
@@ -897,19 +1026,106 @@ function buildPracticePlan(opts){
     const kb = b.counter ? 3 : LEVEL_ORDER.indexOf(DIFFICULTY[b.u[0]]);
     return ka - kb || b.s - a.s || (a.u[0] < b.u[0] ? -1 : 1);
   });
-  const onePass = (closing ? [...rest, closing] : rest).flatMap(c=>c.u);
-  const secOf = n => (isCtr(n) ? repTarget*3 : holdSec) + SEC_OVERHEAD;
-  const passSec = onePass.reduce((t,n)=>t + secOf(n), 0);
-  // The library is finite. If one pass falls well short of the requested time, repeat the same
-  // ordered sequence as extra rounds (max 3) rather than silently handing back a much shorter session.
-  let rounds = 1;
-  while(rounds < 3 && passSec * rounds < budget * 0.7 && passSec * (rounds + 1) <= budget * 1.08) rounds++;
-  const names = []; for(let r = 0; r < rounds; r++) names.push(...onePass);
-  const steps = names.map(n=> isCtr(n) ? counterStep(n, repTarget) : holdStep(n, holdSec));
-  const est = passSec * rounds;
-  return { ...base, steps, names, rounds, passCount:onePass.length, estMinutes:Math.max(1, Math.round(est/60)), reason:"" };
+  return assemblePlan(inp, (closing ? [...rest, closing] : rest).map(c=>c.u), "deterministic", null);
 }
 /*P1-PURE-END*/
+
+/*P2-PURE-START*/
+// ---------- AI layer helpers (pure): request building + strict validation ----------
+function parseAiJson(text){
+  if(typeof text !== "string") return null;
+  const a = text.indexOf("{"), b = text.lastIndexOf("}");
+  if(a < 0 || b <= a) return null;
+  try { const v = JSON.parse(text.slice(a, b + 1)); return (v && typeof v === "object" && !Array.isArray(v)) ? v : null; } catch(e){ return null; }
+}
+function buildAiCandidates(inp){
+  return inp.scored.map((c,i)=>({ id:i + 1, names:c.u, type:c.counter ? "counter" : "hold", seconds:c.t }));
+}
+function buildAiPlanRequest(inp, cands){
+  const recentNames = new Set(); inp.sessions.slice(0, 6).forEach(s=>(s.completed_exercises || []).forEach(e=>{ if(e && e.status === "completed") recentNames.add(e.name); }));
+  const list = cands.map(c=>({ id:c.id, name:c.names.join(" + "), type:c.type, level:DIFFICULTY[c.names[0]],
+    goals:[...new Set(c.names.flatMap(n=>POSE_GOALS[n] || []))], favorite:c.names.some(n=>inp.favs.has(n)),
+    in_recent_sessions:c.names.some(n=>recentNames.has(n)), seconds:c.seconds }));
+  const P = inp.patterns;
+  const context = [
+    "USER SUMMARY (app data):",
+    "level=" + levelOf(inp.profile) + "; goals=" + (inp.goals.join(", ") || "none set") + "; preferred_difficulty=" + (inp.profile.preferred_difficulty || "not set") + ";",
+    "target_seconds=" + inp.budget + "; hold_seconds=" + inp.holdSec + "; rep_target=" + inp.repTarget + "; sessions_in_history=" + inp.sessions.length + ";",
+    "neglected_goals=" + (P.neglectedGoals.join(", ") || "none") + ";",
+    "RECENT SESSIONS (newest first): " + (inp.sessions.slice(0, 3).map(s=>(s.routine_name || "free practice") + " (" + (s.local_date || "") + ")").join("; ") || "none"),
+    "CANDIDATES (every one already passed the app's level, pain and avoided-exercise filters):",
+    JSON.stringify(list),
+  ].join("\n");
+  const message =
+    "TASK: Build today's yoga practice for this user. Reply with ONLY one JSON object, no markdown, no commentary, exactly like " +
+    "{\"order\":[3,1,7],\"reasons\":{\"3\":[\"goal_match\"],\"1\":[\"favorite\",\"not_recent\"]}}. " +
+    "RULES: 'order' lists candidate ids in practice order. Use ONLY ids from CANDIDATES in the application data - never invent exercises or ids - each id at most once. " +
+    "The sum of the chosen candidates' seconds should be close to target_seconds and not more than 10% above it. " +
+    "Start with gentle poses, put rep-based (counter) exercises after the poses, finish with a calm pose. " +
+    "Prefer candidates that match the user's goals or neglected goals, are favorites, and are not in recent sessions. " +
+    "'reasons' maps an id to codes from this list only: " + [...REASON_CODES].join(", ") + ". Only give a code if it is true for that candidate.";
+  return { message, context };
+}
+function resolveCandidate(item, cands){
+  if(typeof item === "number" || (typeof item === "string" && /^\d+$/.test(item.trim()))){ const id = Number(item); return cands.find(c=>c.id === id) || null; }
+  if(typeof item === "string") return cands.find(c=>c.names.includes(item)) || null;
+  return null;
+}
+// Strict gate. Anything unexpected => {ok:false} => caller uses the deterministic plan.
+function validateAiPlan(parsed, inp, cands){
+  if(!parsed || typeof parsed !== "object" || !Array.isArray(parsed.order)) return { ok:false, reason:"schema" };
+  if(parsed.order.length < 2 || parsed.order.length > 40) return { ok:false, reason:"length" };
+  const seen = new Set(), units = [], codes = [];
+  for(const item of parsed.order){
+    const c = resolveCandidate(item, cands);
+    if(!c) return { ok:false, reason:"unknown-item" };
+    if(seen.has(c.id)) return { ok:false, reason:"duplicate" };
+    seen.add(c.id); units.push(c.names);
+    const raw = parsed.reasons && typeof parsed.reasons === "object" ? (parsed.reasons[String(c.id)] || parsed.reasons[c.names[0]]) : null;
+    codes.push(Array.isArray(raw) ? raw.filter(x=>typeof x === "string" && REASON_CODES.has(x)) : []);
+  }
+  // Independent safety re-check: does NOT trust the candidate list.
+  for(const u of units) for(const n of u){
+    if(!(ALL_POSES.includes(n) || ALL_COUNTERS.includes(n))) return { ok:false, reason:"not-in-library" };
+    if(!isEligible(n, inp.ex)) return { ok:false, reason:"unsafe-or-above-level" };
+  }
+  if(units.flat().length < 3) return { ok:false, reason:"too-short" };
+  const sec = units.reduce((t,u)=>t + inp.unitSeconds(u), 0);
+  if(sec > inp.budget * 1.12) return { ok:false, reason:"too-long" };
+  const ctrSec = units.filter(u=>inp.isCtr(u[0])).reduce((t,u)=>t + inp.unitSeconds(u), 0);
+  if(ctrSec > inp.budget * 0.5) return { ok:false, reason:"too-many-counters" };
+  return { ok:true, units, codes };
+}
+
+// ---------- pain alternatives: AI may only RANK candidates the deterministic engine produced ----------
+function validateAltChoice(parsed, cands){
+  if(!parsed || typeof parsed !== "object") return null;
+  const v = parsed.choice;
+  if(typeof v === "number" || (typeof v === "string" && /^\d+$/.test(v.trim()))){ const i = Number(v); return (i >= 1 && i <= cands.length) ? cands[i - 1] : null; }
+  if(typeof v === "string") return cands.includes(v) ? v : null;
+  return null;
+}
+
+// ---------- post-session insight: facts in, text out, text must stay inside the facts ----------
+const MEDICAL_RE = /\b(diagnos\w*|injur\w*|disorder|disease|syndrome|arthritis|sciatica|hernia\w*|tendon\w*|ligament\w*|inflam\w*|cure[sd]?|treat(?:ment|s|ed)?|therap\w*|medical|medication|prescri\w*)\b/i;
+function collectNumbers(v, set){
+  if(typeof v === "number" && isFinite(v)) set.add(String(v));
+  else if(typeof v === "string"){ (v.match(/\d+(?:\.\d+)?/g) || []).forEach(x=>set.add(x)); }
+  else if(Array.isArray(v)) v.forEach(x=>collectNumbers(x, set));
+  else if(v && typeof v === "object") Object.values(v).forEach(x=>collectNumbers(x, set));
+  return set;
+}
+function validateInsight(parsed, facts){
+  const t0 = parsed && typeof parsed.insight === "string" ? parsed.insight : null;
+  if(!t0) return null;
+  const t = t0.trim().replace(/\s+/g, " ");
+  if(t.length < 20 || t.length > 480) return null;
+  if(MEDICAL_RE.test(t)) return null;
+  const allowed = collectNumbers(facts, new Set());
+  for(const n of (t.match(/\d+(?:\.\d+)?/g) || [])) if(!allowed.has(n) && !allowed.has(String(Number(n)))) return null;   // no invented numbers
+  return t;
+}
+/*P2-PURE-END*/
 
 function friendlyAuthError(error){
   const msg = (error && error.message) || "Something went wrong. Please try again.";
@@ -1564,7 +1780,7 @@ function getCurrentExerciseName(){
 // user's level/pain areas, excludes anything already avoided, and
 // prefers a similar purpose (shared goal tags). Returns null if none
 // found - callers must treat null as "no suitable alternative exists."
-function getAlternativeExercise(currentExercise, profile, avoidedSet, excludeSet){
+function getAlternativeCandidates(currentExercise, profile, avoidedSet, excludeSet){
   const isCounter = ALL_COUNTERS.includes(currentExercise);
   const pool = isCounter ? ALL_COUNTERS : ALL_POSES;
 
@@ -1587,7 +1803,7 @@ function getAlternativeExercise(currentExercise, profile, avoidedSet, excludeSet
     !painAvoid.has(name)
   );
 
-  if (candidates.length === 0) return null;
+  if (candidates.length === 0) return [];
 
   candidates.sort((a,b)=>{
     const aOverlap = (POSE_GOALS[a]||[]).filter(g=>myGoals.has(g)).length;
@@ -1595,7 +1811,12 @@ function getAlternativeExercise(currentExercise, profile, avoidedSet, excludeSet
     return bOverlap - aOverlap;
   });
 
-  return candidates[0];
+  return candidates;
+}
+
+function getAlternativeExercise(currentExercise, profile, avoidedSet, excludeSet){
+  const c = getAlternativeCandidates(currentExercise, profile, avoidedSet, excludeSet);
+  return c.length ? c[0] : null;
 }
 
 window.reportPain = async function(){
@@ -1632,9 +1853,9 @@ window.reportPain = async function(){
 
   // 6/7. Search for an alternative. In a routine, prefer one that isn't already a step of it.
   const inSequence = practiceMode === "sequence" && !!sequenceSteps[sequenceIndex];
-  const alternative = inSequence
-    ? (getAlternativeExercise(current, authProfile, avoidedSet, new Set(sequenceSteps.map(s=>s.name))) || getAlternativeExercise(current, authProfile, avoidedSet))
-    : getAlternativeExercise(current, authProfile, avoidedSet);
+  // Deterministic engine decides what is allowed (and the doctor fallback); AI may only re-rank its candidates.
+  const picked = await chooseAlternative(current, avoidedSet, inSequence ? new Set(sequenceSteps.map(s=>s.name)) : null);
+  const alternative = picked ? picked.name : null;
 
   if (alternative) {
     if (inSequence) msgEl.innerHTML = `<p>Pain reported. Replacing this step with <b>${escapeHtml(alternative)}</b> - your routine continues.</p>`;
@@ -1644,13 +1865,13 @@ window.reportPain = async function(){
       if (inSequence) {
         // A -> B -> C -> D -> E, pain on C  =>  A -> B -> Alt-C -> D -> E.
         // Same sequenceIndex, same recorder, same remaining steps; only the step itself changes.
-        replaceSequenceStepInPlace(current, alternative);
+        replaceSequenceStepInPlace(current, alternative, picked.pool, picked.source);
         resetHoldAndCounter();
         sequenceState = "active";
         updateSequenceUI();
         if (await openCamera()) loop();
       } else {
-        recSubstitute(current, alternative, 0);
+        recSubstitute(current, alternative, 0, picked.source);
         const listContext = ALL_COUNTERS.includes(alternative) ? ALL_COUNTERS : ALL_POSES;
         startSingle(alternative, listContext, { keepSession: true });
       }
@@ -1877,6 +2098,7 @@ function buildAppContext(){
     // The user's own Kriya notes come FIRST, so if the total ever has to
     // be trimmed (see the Worker's safeAppContext cap), it's the static
     // built-in app data that gets cut, never the user's own content.
+    buildUserContext(), "",
     "USER'S PERSONAL YOG KRIYA NOTES (from their own 'Learn More About Yoga' entries):", kriyaLines,
     "", "ASANAS AVAILABLE IN THIS APP:", poseLines,
     "", "EXERCISE COUNTERS AVAILABLE IN THIS APP:", counterLines,
@@ -2439,6 +2661,7 @@ window.startSequence = async function(routineName, steps, opts){
   sequenceSteps = steps.map(s=>({...s})); sequenceIndex=0; sequenceState="active";
   const sType = (opts && opts.sessionType) || (ROUTINES[routineName] ? "preset_routine" : "custom_routine");
   recStart(sType, routineName, (opts && opts.goal) || null);
+  if (opts && opts.planSource) rec.planSource = opts.planSource;
   lastLaunch = { kind:"sequence", name:routineName, steps:steps.map(s=>({...s})), sessionType:sType, goal:(opts && opts.goal) || null };
   resetHoldAndCounter();
   document.getElementById("step-progress").style.display="block";
@@ -2728,15 +2951,15 @@ function recMarkStepDone(){
   else if(kind === "asana") e.holdSeconds = Math.max(e.holdSeconds, Math.min(elapsed, step.target + 2));
   else e.holdSeconds = step.target;
 }
-function recSubstitute(oldName, newName, laterCount){
+function recSubstitute(oldName, newName, laterCount, source, laterTo){
   if(!rec) return;
   // The entry may not exist yet (e.g. pain reported before the camera saw a frame) - create it so the
   // history still shows which step was replaced.
   const step = practiceMode === "sequence" ? sequenceSteps[sequenceIndex] : null;
   const e = rec.byKey[recKey(oldName)] || recEntry(recKey(oldName), oldName, ALL_COUNTERS.includes(oldName) ? "exercise" : "asana", step ? step.target : 0);
   if(e) e.status = "substituted";
-  rec.substitutions.push({ from:oldName, to:newName, reason:"pain_reported",
-    step: practiceMode === "sequence" ? sequenceIndex + 1 : null, later_steps_replaced: laterCount || 0 });
+  rec.substitutions.push({ from:oldName, to:newName, reason:"pain_reported", source:source || "rules",
+    step: practiceMode === "sequence" ? sequenceIndex + 1 : null, later_steps_replaced: laterCount || 0, later_to: laterTo || [] });
 }
 // Builds the DB row + display summary. Returns null if nothing was genuinely completed (nothing is saved then).
 function recFinalize(mode){
@@ -2766,7 +2989,7 @@ function recFinalize(mode){
     total_reps: exercises.reduce((n,x)=>n + (x.kind === "exercise" ? x.reps : 0), 0),
     total_hold_seconds: exercises.reduce((n,x)=>n + (x.kind !== "exercise" ? x.hold_seconds : 0), 0),
     completed_exercises: exercises,
-    metadata: { substitutions: rec.substitutions, planned_steps: seq ? sequenceSteps.length : null, ended: mode,
+    metadata: { substitutions: rec.substitutions, plan_source: rec.planSource || undefined, planned_steps: seq ? sequenceSteps.length : null, ended: mode,
                 calories_estimate: rec.sessionType === "calorie" ? Math.round(totalCalories * 100) / 100 : undefined },
   };
   const holds = done.filter(x=>x.kind === "asana").map(x=>x.hold_seconds);
@@ -2779,18 +3002,23 @@ function recFinalize(mode){
 
 // Replace the current sequence step (and any later repeats of the same exercise) WITHOUT
 // touching sequenceIndex, sequenceState, the recorder or the other steps.
-function replaceSequenceStepInPlace(oldName, newName){
+function replaceSequenceStepInPlace(oldName, newName, pool, source){
   const i = sequenceIndex;
-  const mk = ref => ALL_COUNTERS.includes(newName)
-    ? counterStep(newName, (ref && ref.type === "counter") ? ref.target : recRepTarget())
-    : holdStep(newName, (ref && ref.type === "hold") ? ref.target : ((authProfile && authProfile.asana_hold_time) || 15));
-  let later = 0;
+  const mk = (name, ref) => ALL_COUNTERS.includes(name)
+    ? counterStep(name, (ref && ref.type === "counter") ? ref.target : recRepTarget())
+    : holdStep(name, (ref && ref.type === "hold") ? ref.target : ((authProfile && authProfile.asana_hold_time) || 15));
+  // Later repeats of the same painful exercise are recalculated too: each gets the next valid option
+  // that is not already used, instead of blindly repeating the same substitute (falls back to it only if nothing else is valid).
+  const used = new Set([newName]), laterTo = [];
   for(let j = i + 1; j < sequenceSteps.length; j++){
-    if(sequenceSteps[j].name === oldName){ sequenceSteps[j] = mk(sequenceSteps[j]); later++; }
+    if(sequenceSteps[j].name === oldName){
+      const alt = (pool || []).find(n=>!used.has(n) && !sequenceSteps.some(s=>s.name === n)) || newName;
+      used.add(alt); laterTo.push(alt); sequenceSteps[j] = mk(alt, sequenceSteps[j]);
+    }
   }
-  recSubstitute(oldName, newName, later);
-  sequenceSteps[i] = mk(sequenceSteps[i]);
-  return later;
+  recSubstitute(oldName, newName, laterTo.length, source, laterTo);
+  sequenceSteps[i] = mk(newName, sequenceSteps[i]);
+  return laterTo.length;
 }
 /*P1-REC-END*/
 
@@ -2932,19 +3160,11 @@ function refreshActiveDataScreen(){
 }
 
 // ---------- Today's Practice ----------
-function getTodayPlan(){
-  const p = authProfile || {};
-  const key = JSON.stringify([todayStr(), p.yoga_level, p.goals, p.preferred_difficulty, p.session_duration, p.asana_hold_time,
-    p.exercise_rep_limit, p.pain_areas, p.avoided_exercises, userData.sessions.length, userData.sessions[0] && userData.sessions[0].id,
-    favoriteExerciseNames().sort()]);
-  if(todayPlanCache && todayPlanCache.key === key) return todayPlanCache.plan;
-  const plan = buildPracticePlan({ profile:p, avoidedSet:new Set(p.avoided_exercises || []), favs:new Set(favoriteExerciseNames()), sessions:userData.sessions });
-  todayPlanCache = { key, plan }; return plan;
-}
+// getTodayPlan() lives in the Phase 2 block (deterministic first, validated AI upgrade)
 function startTodayPractice(){
   const plan = getTodayPlan();
   if(!plan || !plan.steps.length){ toast("Update your preferences to build a practice."); return; }
-  startSequence("Today's Practice", plan.steps, { sessionType:"daily_plan", goal:plan.goalLabel });
+  startSequence("Today's Practice", plan.steps, { sessionType:"daily_plan", goal:plan.goalLabel, planSource:plan.source });
 }
 
 // ---------- HOME dashboard ----------
@@ -2972,23 +3192,7 @@ function renderHome(){
       todayHtml = '<div class="today-meta">No practice available</div><div class="today-why">' + escapeHtml(plan.reason) + '</div>' +
         '<div class="nav-row"><button class="btn-secondary" data-act="prefs">Edit preferences</button></div>';
     } else {
-      const firstPass = plan.names.slice(0, plan.passCount);
-      const shown = firstPass.slice(0, 4).map(escapeHtml).join(", ") + (firstPass.length > 4 ? " +" + (firstPass.length - 4) + " more" : "");
-      const why = [];
-      why.push("Built from your " + plan.levelLabel.toLowerCase() + " level" + (plan.goals.length ? " and " + plan.goals.join(", ") + " goal" + (plan.goals.length > 1 ? "s" : "") : "") + ".");
-      if(plan.rounds > 1) why.push("Repeats the sequence " + plan.rounds + " times to fill your time.");
-      else if(plan.estMinutes < plan.minutesTarget * 0.7) why.push("About " + plan.estMinutes + " min - that's all the matching exercises available for your settings.");
-      if(plan.safetySkipped) why.push("Skips " + plan.safetySkipped + " exercise" + (plan.safetySkipped > 1 ? "s" : "") + " from your pain areas and avoided list.");
-      if(plan.usedHistory) why.push("Rotates away from what you did recently.");
-      const detail = plan.steps.map(s=>'<div class="sess-row"><span>' + escapeHtml(s.name) + '</span><span class="tag">' + (s.type === "counter" ? s.target + " reps" : s.target + "s hold") + '</span></div>').join("");
-      todayHtml =
-        '<div class="today-meta">' + plan.estMinutes + ' min · ' + escapeHtml(plan.levelLabel) + ' · ' + escapeHtml(plan.goalLabel) + '</div>' +
-        '<div class="hint" style="margin-top:0">' + plan.names.length + ' steps: ' + shown + '</div>' +
-        '<div class="today-why">' + why.join(" ") + (hasPersonalization(authProfile) ? "" : " Set your preferences to personalize this.") + '</div>' +
-        (stats.practicedToday ? '<div class="today-why">You\'ve already practiced today - this is an extra session.</div>' : '') +
-        '<div class="nav-row"><button class="btn-primary" data-act="startToday">Start practice</button>' +
-        (hasPersonalization(authProfile) ? '' : '<button class="btn-secondary" data-act="prefs">Set preferences</button>') + '</div>' +
-        '<details class="plan-details"><summary>View plan</summary>' + detail + '</details>';
+      todayHtml = renderTodayCard(plan, stats);
     }
   }
 
@@ -3062,7 +3266,7 @@ function renderProgress(){
   body.innerHTML =
     '<div class="stat-grid stat-grid-3">' + tiles + '</div>' +
     '<div class="hint">A day counts toward your streak when you finish a routine, or finish an exercise target in a free session lasting at least 2 minutes. Opening the app doesn\'t count, and a missed day resets the current streak.</div>' +
-    '<div class="section-label">Achievements</div><div class="ach-grid">' + ach + '</div>' +
+    patternsHtml() + '<div class="section-label">Achievements</div><div class="ach-grid">' + ach + '</div>' +
     '<div class="section-label">Most practiced poses</div>' + list(topPoses) +
     '<div class="section-label">Most practiced routines</div>' + list(topRoutines) +
     '<div class="section-label">Recent sessions</div>' + (recent || '<div class="hint">No sessions yet.</div>') +
@@ -3142,6 +3346,7 @@ async function persistSummary(){
   ls.newAch = await syncAchievements();
   if(lastSummary === ls) renderSummary();
   renderHome();
+  generateInsight(ls);   // optional; the normal summary above is already complete
 }
 function renderSummary(){
   const ls = lastSummary; if(!ls) return;
@@ -3165,6 +3370,7 @@ function renderSummary(){
   if(!complete) notes += '<div class="hint">You ended this routine early, so it\'s saved as partial and doesn\'t count toward your streak.</div>';
   else if(!row.counts_for_streak) notes += '<div class="hint">This free session didn\'t count toward your streak (it needs a finished exercise target and at least 2 minutes).</div>';
   set("sum-notes", notes);
+  set("sum-insight", ls.insightState === "loading" ? '<div class="hint">Writing your insight…</div>' : (ls.insight ? '<div class="insight-card"><span class="chip chip-ai">AI Insight</span><p>' + escapeHtml(ls.insight) + '</p></div>' : ""));
   set("sum-ach", ls.newAch.map(a=>'<div class="ach fresh"><span class="ico">' + a.icon + '</span><div><div class="ach-title">Achievement unlocked: ' + escapeHtml(a.title) + '</div><div class="tag">' + escapeHtml(a.desc) + '</div></div></div>').join(""));
   const save = { saving:'Saving your session…', saved:'Session saved to your history.', guest:'Log in to save sessions to your history. <button class="auth-link" data-act="sumLogin">Log in</button>',
                  error:'Couldn\'t save this session. <button class="auth-link" data-act="retrySave">Try again</button>' }[ls.saveState];
@@ -3229,6 +3435,234 @@ Object.assign(UI, {
   },
 });
 ["home-dashboard","progress-body","history-body","favorites-body","summary-screen"].forEach(id=>bindActions(document.getElementById(id)));
+
+// ============================================================
+// PHASE 2 - AI LAYER (Gemini via the EXISTING Worker; deterministic rules stay the safety authority)
+// Nothing here is required for basic practice: every AI result is parsed, schema-checked,
+// name-checked and safety-checked, and any failure silently falls back to the deterministic result.
+// Gemini is never called from the camera loop (no per-frame / per-rep / per-hold calls).
+// ============================================================
+const AI_ENABLED = true;
+let AI_TIMEOUTS = { plan:12000, insight:10000, pain:3000 };   // ms
+let AI_DEBOUNCE_MS = 1200;                                    // wait for UI to settle before asking for a plan
+let aiCooldownUntil = 0;                                      // set after a 429 so we don't hammer the Worker
+
+// Sends a task to the existing chat endpoint and returns the parsed JSON object, or null on ANY problem.
+// Bulk data goes in `appContext` (30k cap in the Worker); the instruction in `message` (4k cap).
+async function callCoachJSON(kind, message, context){
+  if(!AI_ENABLED || Date.now() < aiCooldownUntil) return null;
+  if(typeof message !== "string" || message.length > 3900) return null;
+  const ctrl = new AbortController();
+  const timer = setTimeout(()=>ctrl.abort(), AI_TIMEOUTS[kind] || 8000);
+  try {
+    const res = await fetch(WORKER_URL, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, history: [], appContext: String(context || "").slice(0, 28000) }),
+      signal: ctrl.signal,
+    });
+    if(res.status === 429){ aiCooldownUntil = Date.now() + 90000; return null; }
+    if(!res.ok) return null;
+    const data = await res.json().catch(()=>null);
+    return parseAiJson(data && data.reply);
+  } catch(e){ return null; }
+  finally { clearTimeout(timer); }
+}
+
+// ---------- Today's Practice: deterministic first, AI upgrade when it validates ----------
+let aiPlanTimer = null;
+const aiInFlight = new Set(), aiFailed = new Set();
+function currentPlanInputs(){
+  const p = authProfile || {};
+  return preparePlanInputs({ profile:p, avoidedSet:new Set(p.avoided_exercises || []), favs:new Set(favoriteExerciseNames()), sessions:userData.sessions });
+}
+function todayPlanKey(){
+  const p = authProfile || {};
+  return JSON.stringify([todayStr(), p.yoga_level, p.goals, p.preferred_difficulty, p.session_duration, p.asana_hold_time,
+    p.exercise_rep_limit, p.pain_areas, p.avoided_exercises, userData.sessions.length, userData.sessions[0] && userData.sessions[0].id,
+    favoriteExerciseNames().sort()]);
+}
+const AI_PLAN_LS = "yogai_ai_plan_v1";
+function loadCachedAiPlan(key, inp){
+  try {
+    const raw = JSON.parse(localStorage.getItem(AI_PLAN_LS) || "null");
+    if(!raw || raw.uid !== (authUser && authUser.id) || raw.key !== key || !Array.isArray(raw.selection)) return null;
+    // Re-validated against CURRENT safety rules every time - a cached plan is never trusted blindly.
+    const cands = buildAiCandidates(inp);
+    const reasons = {}; raw.selection.forEach(s=>{ reasons[s.names[0]] = s.codes || []; });
+    const v = validateAiPlan({ order:raw.selection.map(s=>s.names[0]), reasons }, inp, cands);
+    return v.ok ? assemblePlan(inp, v.units, "ai", v.codes) : null;
+  } catch(e){ return null; }
+}
+function saveCachedAiPlan(key, v){
+  try { localStorage.setItem(AI_PLAN_LS, JSON.stringify({ uid:authUser && authUser.id, key, selection:v.units.map((u,i)=>({ names:u, codes:v.codes[i] })) })); } catch(e){}
+}
+async function runAiPlan(key){
+  const inp = currentPlanInputs();
+  const cands = buildAiCandidates(inp);
+  if(cands.length < 3) return null;
+  const req = buildAiPlanRequest(inp, cands);
+  const parsed = await callCoachJSON("plan", req.message, req.context);
+  if(todayPlanKey() !== key) return null;                         // state changed while waiting - discard
+  const v = validateAiPlan(parsed, inp, cands);
+  if(!v.ok){ console.debug("[ai-plan] using deterministic plan:", parsed ? v.reason : "no usable response"); return null; }
+  return { plan:assemblePlan(inp, v.units, "ai", v.codes), v };
+}
+function maybeUpgradePlan(c, key){
+  if(!AI_ENABLED || !authUser || !userData.loaded || !userData.available) return;
+  if(c.plan.steps.length < 3 || aiFailed.has(key) || aiInFlight.has(key)) return;
+  const cached = loadCachedAiPlan(key, currentPlanInputs());
+  if(cached){ c.ai = cached; return; }
+  clearTimeout(aiPlanTimer);
+  aiPlanTimer = setTimeout(async ()=>{
+    if(todayPlanKey() !== key || aiInFlight.has(key)) return;
+    aiInFlight.add(key);
+    try {
+      const r = await runAiPlan(key);
+      if(r && todayPlanCache && todayPlanCache.key === key){ todayPlanCache.ai = r.plan; saveCachedAiPlan(key, r.v); renderHome(); }
+      else if(!r) aiFailed.add(key);
+    } catch(e){ aiFailed.add(key); }
+    finally { aiInFlight.delete(key); }
+  }, AI_DEBOUNCE_MS);
+}
+function getTodayPlan(){
+  const key = todayPlanKey();
+  if(!(todayPlanCache && todayPlanCache.key === key)){
+    todayPlanCache = { key, plan:buildPracticePlan({ profile:authProfile || {}, avoidedSet:new Set((authProfile && authProfile.avoided_exercises) || []),
+      favs:new Set(favoriteExerciseNames()), sessions:userData.sessions }), ai:null };
+  }
+  const c = todayPlanCache;
+  if(c.ai) return c.ai;
+  maybeUpgradePlan(c, key);      // may attach a revalidated cached AI plan synchronously, or schedule one request
+  return c.ai || c.plan;
+}
+function peekTodayPlan(){ return todayPlanCache ? (todayPlanCache.ai || todayPlanCache.plan) : null; }   // no side effects (used by chat context)
+
+function renderTodayCard(plan, stats){
+  const firstPass = plan.names.slice(0, plan.passCount);
+  const shown = firstPass.slice(0, 4).map(escapeHtml).join(", ") + (firstPass.length > 4 ? " +" + (firstPass.length - 4) + " more" : "");
+  const chip = plan.source === "ai" ? '<span class="chip chip-ai">AI Personalized</span>' : (plan.usedHistory ? '<span class="chip">Based on your practice</span>' : '');
+  const note = plan.estMinutes < plan.minutesTarget * 0.7 && plan.rounds === 1 ? '<div class="today-why">About ' + plan.estMinutes + ' min - that is all the matching exercises available for your settings.</div>' : '';
+  const detail = plan.steps.map(s=>'<div class="sess-row"><span>' + escapeHtml(s.name) + '</span><span class="tag">' + (s.type === "counter" ? s.target + " reps" : s.target + "s hold") + '</span></div>').join("");
+  const whyRows = firstPass.map(n=>'<div class="why-row"><b>' + escapeHtml(n) + '</b><div class="tag">' + (plan.why[n] || []).map(escapeHtml).join(" · ") + '</div></div>').join("");
+  const whyHtml = '<details class="plan-details"><summary>Why this?</summary>' + plan.whyOverall.map(l=>'<div class="today-why">' + escapeHtml(l) + '</div>').join("") + '<div style="margin-top:8px">' + whyRows + '</div></details>';
+  return (chip ? '<div style="margin-bottom:6px">' + chip + '</div>' : '') +
+    '<div class="today-meta">' + plan.estMinutes + ' min · ' + escapeHtml(plan.levelLabel) + ' · ' + escapeHtml(plan.goalLabel) + '</div>' +
+    '<div class="hint" style="margin-top:0">' + plan.names.length + ' steps: ' + shown + '</div>' + note +
+    (stats.practicedToday ? '<div class="today-why">You\'ve already practiced today - this is an extra session.</div>' : '') +
+    (hasPersonalization(authProfile) ? '' : '<div class="today-why">Set your preferences to personalize this.</div>') +
+    '<div class="nav-row"><button class="btn-primary" data-act="startToday">Start practice</button>' +
+    (hasPersonalization(authProfile) ? '' : '<button class="btn-secondary" data-act="prefs">Set preferences</button>') + '</div>' +
+    '<details class="plan-details"><summary>View plan</summary>' + detail + '</details>' + whyHtml;
+}
+function patternsHtml(){
+  const lines = patternLines(computePatterns(userData.sessions, authProfile || {}, favoriteExerciseNames()));
+  if(!lines.length) return "";
+  return '<div class="section-label">Based on your practice</div><div class="dash-card">' + lines.map(l=>'<div class="sess-row"><span>' + escapeHtml(l) + '</span></div>').join("") + '</div>';
+}
+
+// ---------- pain alternatives: deterministic engine first, AI may only re-rank its output ----------
+// How many times each exercise has already been used as THIS exercise's substitute (saved history + this session).
+function recentSubstitutesFor(name){
+  const used = new Map();
+  const bump = to => used.set(to, (used.get(to) || 0) + 1);
+  userData.sessions.forEach(s=>((s.metadata && s.metadata.substitutions) || []).forEach(x=>{ if(x && x.from === name && x.to) bump(x.to); }));
+  if(rec) rec.substitutions.forEach(x=>{ if(x.from === name) bump(x.to); });
+  return used;
+}
+async function chooseAlternative(current, avoidedSet, routineSet){
+  const all = getAlternativeCandidates(current, authProfile, avoidedSet, null);
+  if(!all.length) return null;                       // deterministic "no safe alternative" result always wins -> doctor fallback
+  // Preference order (engine order breaks ties): the option used LEAST often as this exercise's substitute wins
+  // (never-used first), then one that is not already a step of this routine. Used options stay valid, just later.
+  const used = recentSubstitutesFor(current);
+  const rank = n => (used.get(n) || 0) * 10 + (routineSet && routineSet.has(n) ? 1 : 0);
+  let list = all.map((n,i)=>({ n, i, r:rank(n) })).sort((a,b)=>a.r - b.r || a.i - b.i).map(x=>x.n);
+  let name = list[0], source = "rules";
+  if(list.length > 1){
+    const top = list.slice(0, 6);
+    const prof = authProfile || {};
+    const ctx = ["CURRENT EXERCISE (user reported pain; do not choose it): " + current + " [" + DIFFICULTY[current] + "] goals: " + ((POSE_GOALS[current] || []).join(", ") || "none"),
+      "USER: level=" + levelOf(prof) + "; goals=" + (normGoals(prof).join(", ") || "none set"),
+      "RECENTLY USED AS SUBSTITUTES FOR THIS EXERCISE (avoid repeating): " + ([...used.keys()].join("; ") || "none"),
+      "CANDIDATES (all already passed the app's level, pain and avoided-exercise filters):",
+      JSON.stringify(top.map((n,i)=>({ id:i + 1, name:n, level:DIFFICULTY[n], goals:POSE_GOALS[n] || [] })))].join("\n");
+    const msg = "TASK: Pick the single best replacement exercise. Reply with ONLY one JSON object like {\"choice\":2}. " +
+      "'choice' must be a candidate id from CANDIDATES in the application data - never invent an exercise. Prefer one that keeps the same goals as the current exercise and was not recently used as a substitute.";
+    const picked = validateAltChoice(await callCoachJSON("pain", msg, ctx), top);
+    if(picked){ name = picked; source = "ai"; }   // picked is always one of the deterministic engine's own candidates
+  }
+  return { name, pool:[name, ...list.filter(n=>n !== name)], source };
+}
+
+// ---------- post-session insight ----------
+function buildInsightFacts(saved, result, prev){
+  const row = saved, ex = Array.isArray(row.completed_exercises) ? row.completed_exercises : [];
+  const doneEx = ex.filter(e=>e.status === "completed");
+  const prof = authProfile || {};
+  const goals = normGoals(prof);
+  const tagSet = new Set(doneEx.flatMap(e=>POSE_GOALS[e.name] || []));
+  const prevComplete = prev.filter(s=>s.completion_status === "complete");
+  const avg = arr => arr.length ? Math.round(arr.reduce((a,b)=>a + b, 0) / arr.length) : null;
+  const st = computeStats(userData.sessions, todayStr());
+  const weekAgo = dayNum(todayStr()) - 6;
+  return {
+    this_session: { type:row.session_type, name:row.routine_name || "free practice", status:row.completion_status,
+      minutes:Math.max(1, Math.round((row.duration_seconds || 0) / 60)), exercises_completed:doneEx.length, asanas_completed:result.asanas, rep_exercises_completed:result.counters,
+      total_reps:row.total_reps || 0, longest_hold_seconds:result.longestHold || 0,
+      replaced_after_pain:((row.metadata && row.metadata.substitutions) || []).map(x=>({ from:x.from, to:x.to })) },
+    goals_trained_this_session: goals.filter(g=>tagSet.has(g)),
+    user_goals: goals,
+    comparison: { previous_sessions_considered:prevComplete.length, average_minutes_previous:avg(prevComplete.map(s=>Math.round((s.duration_seconds || 0) / 60))),
+      average_exercises_previous:avg(prevComplete.map(s=>exerciseCount(s))),
+      sessions_in_last_7_days:userData.sessions.filter(s=>s.local_date && dayNum(s.local_date) >= weekAgo).length, current_streak_days:st.currentStreak },
+  };
+}
+async function generateInsight(ls){
+  if(!AI_ENABLED || !ls || !ls.saved || !authUser || ls.insightState) return;
+  const saved = userData.sessions[0]; if(!saved) return;
+  ls.insightState = "loading"; renderSummary();
+  try {
+    const facts = buildInsightFacts(saved, ls.result, userData.sessions.slice(1, 6));
+    const message = "TASK: Write a short, friendly reflection (2-3 sentences, under 60 words) on the yoga session described in SESSION FACTS. " +
+      "Reply with ONLY one JSON object like {\"insight\":\"...\"}. RULES: use only the facts provided; copy numbers exactly as given and never calculate new numbers; " +
+      "if comparison.previous_sessions_considered is above 0, compare this session with the previous ones using the given averages; " +
+      "mention pain replacements only if replaced_after_pain is not empty; no medical statements, no diagnosis, no advice about injuries; no emojis.";
+    const parsed = await callCoachJSON("insight", message, "SESSION FACTS (saved by the app):\n" + JSON.stringify(facts));
+    const text = validateInsight(parsed, facts);
+    ls.insight = text; ls.insightState = text ? "done" : "none";
+  } catch(e){ ls.insightState = "none"; }
+  if(lastSummary === ls) renderSummary();
+}
+
+// ---------- context for the Yoga Assistant (compact, labelled, no identifiers or tokens) ----------
+function buildUserContext(){
+  if(!authUser) return "THE USER IS NOT LOGGED IN, so there is no saved personal data. Do not guess personal details.";
+  const p = authProfile || {}, today = todayStr(), L = [];
+  L.push("ABOUT THIS USER (from their YogaAI profile; user-provided unless noted):");
+  L.push("- Yoga level: " + (p.yoga_level || "not set") + "; goals: " + ((p.goals || []).join(", ") || "not set"));
+  L.push("- Preferred difficulty: " + (p.preferred_difficulty || "not set") + "; session length setting: " + (p.session_duration || "not set") + " min; asana hold: " + (p.asana_hold_time || "not set") + " s; rep limit: " + (p.exercise_rep_limit || "not set"));
+  L.push("- Pain/discomfort areas the user reported: " + ((p.pain_areas || []).join(", ") || "none") + " (never diagnose these)");
+  L.push("- Exercises the user avoids (reported painful): " + ((p.avoided_exercises || []).join(", ") || "none"));
+  const favs = favoriteExerciseNames();
+  L.push("- Favorite exercises: " + (favs.slice(0, 10).join(", ") || "none") + (userData.favoriteRows.some(r=>r.kind === "routine") ? "; favorite routines: " + userData.favoriteRows.filter(r=>r.kind === "routine").map(r=>r.item_name).slice(0, 5).join(", ") : ""));
+  if(userData.loaded && userData.available){
+    const st = computeStats(userData.sessions, today);
+    L.push("RECENT PRACTICE (saved history; app data): " + st.completeSessions + " completed sessions, " + fmtTotal(st.totalSeconds) + " total, current streak " + st.currentStreak + " day(s).");
+    userData.sessions.slice(0, 4).forEach(s=>L.push("- " + relDay(s.local_date, today) + ": " + sessionTitle(s) + ", " + fmtTotal(s.duration_seconds) + ", " + exerciseCount(s) + " exercises, " + s.completion_status));
+    const pl = patternLines(computePatterns(userData.sessions, p, favs));
+    if(pl.length){ L.push("PATTERNS COMPUTED BY THE APP (facts, not diagnoses):"); pl.forEach(x=>L.push("- " + x)); }
+  } else L.push("RECENT PRACTICE: not available right now.");
+  const plan = peekTodayPlan() || (hasPersonalization(p) ? buildPracticePlan({ profile:p, avoidedSet:new Set(p.avoided_exercises || []), favs:new Set(favs), sessions:userData.sessions }) : null);
+  if(plan && plan.steps.length) L.push("TODAY'S RECOMMENDED PRACTICE (from the app's planner, " + plan.estMinutes + " min): " + plan.names.slice(0, plan.passCount).join(" -> ") + (plan.rounds > 1 ? " (repeated " + plan.rounds + "x)" : ""));
+  if(rec && !rec.done) L.push("CURRENT PRACTICE: " + (rec.routineName || "free practice") + (practiceMode === "sequence" && sequenceSteps[sequenceIndex] ? ", step " + (sequenceIndex + 1) + "/" + sequenceSteps.length + ": " + sequenceSteps[sequenceIndex].name : ""));
+  if(lastSummary && lastSummary.result && Date.now() - new Date(lastSummary.result.row.completed_at).getTime() < 30 * 60000){
+    const r = lastSummary.result;
+    L.push("JUST FINISHED: " + (r.row.routine_name || "free practice") + ", " + fmtTotal(r.row.duration_seconds) + ", " + r.completed + " exercises completed (" + r.row.completion_status + ").");
+  }
+  L.push("HOW TO USE THIS: for 'what should I practice' questions, base the answer on TODAY'S RECOMMENDED PRACTICE and the lists below. Only suggest exercises and features that appear in this data. " +
+    "Keep apart (1) app data, (2) what the user told us, (3) general yoga knowledge, (4) your own suggestions - say 'I suggest' for suggestions. Never diagnose pain or injuries; for severe, persistent or unclear pain, advise seeing a doctor or physical therapist.");
+  return L.join("\n");
+}
 </script>
 </body>
 </html>
