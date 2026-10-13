@@ -127,6 +127,16 @@
   .empty-state { color:var(--text-dim); font-size:.9rem; padding:20px 0; text-align:center; }
   .storage-warning { font-size:.8rem; color:#ffb74d; margin-top:10px; }
 
+  /* ===== asana expansion ===== */
+  .pose-cue { margin:8px 0 2px; padding:9px 12px; border-radius:10px; border:1px solid rgba(220,178,95,.4); background:rgba(220,178,95,.07); color:#e9d3a0; font-size:.88rem; line-height:1.4; }
+  .pose-info-wrap { margin:6px 0 10px; }
+  .pose-info { border:1px solid var(--border); border-radius:10px; padding:10px 14px; background:rgba(15,22,18,.6); font-size:.86rem; line-height:1.5; }
+  .pose-info summary { cursor:pointer; font-weight:600; color:var(--accent); }
+  .pose-info p { margin:8px 0 0 0; color:var(--text); } .pose-info .pi-names { color:var(--text-dim); }
+  .pose-info .pi-limited { color:#e9d3a0; }
+  .free-search { width:100%; box-sizing:border-box; margin:6px 0 4px; padding:11px 14px; border-radius:10px; border:1px solid var(--border); background:#0c120f; color:var(--text); font-size:.92rem; }
+  .free-search:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  .tag-limited { border:1px solid rgba(220,178,95,.5); color:#e9d3a0; border-radius:999px; padding:1px 8px; margin-left:6px; font-size:.68rem; }
   /* ===== Phase 1: dashboard, progress, history, favorites, summary ===== */
   .guest-banner { display:none; background:#0f1612; border:1px solid var(--border); border-radius:12px; padding:14px 18px; margin-bottom:18px; font-size:.9rem; color:var(--text-dim); }
   #home-dashboard { display:none; }
@@ -842,6 +852,7 @@
     <div class="card">
       <button class="back-link" onclick="goToScreen('home')">← Back</button>
       <h2>Free Exercise</h2>
+      <input type="search" id="free-search" class="free-search" placeholder="Search asanas by name, Sanskrit or alias" aria-label="Search asanas" autocomplete="off">
       <div class="section-label">Asanas</div>
       <div id="free-poses-list" class="pose-list"></div>
       <div class="section-label">Exercise counters</div>
@@ -1014,6 +1025,7 @@
       <div id="step-progress" class="step-progress" style="display:none;"></div>
       <div class="title-row"><h2 id="practice-title">Practicing: -</h2><button type="button" class="fav-btn" id="practice-fav" data-kind="asana" data-key="" title="Favorite" aria-label="Favorite this exercise">♡</button></div>
       <div class="tip-text" id="practice-tip"></div>
+      <div id="pose-info" class="pose-info-wrap" style="display:none;"></div>
       <div class="practice-layout">
         <div class="video-wrap">
           <video id="webcam" autoplay playsinline muted></video>
@@ -1022,6 +1034,7 @@
         <div class="right-panel">
           <div class="panel-box">
             <div id="status-pill" class="status-pill status-adjust">Detecting...</div>
+            <div id="pose-cue" class="pose-cue" role="status" style="display:none;"></div>
             <div id="hold-mode-controls" class="timer-controls" style="display:none;">
               <span>Hold target:</span>
               <button onclick="adjustTimer(-5)">-5s</button>
@@ -1087,8 +1100,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 //                                sb_secret_... key here or anywhere
 //                                in this file.
 // ============================================================
-const SUPABASE_URL = "https://dkptupmgebwaoujmwmcq.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_iOmXS1j6_xoZGMWlWZPk1g_7eYG1Jn1";
+const SUPABASE_URL = "https://YOUR_PROJECT_REF.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_YOUR_KEY_HERE";
 const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
 let authUser = null;      // Supabase auth user object, or null when logged out
@@ -1341,7 +1354,7 @@ function preparePlanInputs(o){
   const eligible = exerciseUnits().filter(u=>u.every(n=>isEligible(n, ex)));
   const budget = minutes * 60;
   const isCtr = n => ALL_COUNTERS.includes(n);
-  const unitSeconds = u => u.reduce((t,n)=> t + (isCtr(n) ? repTarget*3 : holdSec) + SEC_OVERHEAD, 0);
+  const unitSeconds = u => u.reduce((t,n)=> t + (isCtr(n) ? repTarget*3 : holdFor(n, holdSec)) + SEC_OVERHEAD, 0);
   const counterShare = goals.some(g=>g === "strength" || g === "general fitness") ? 0.4 : (goals.length ? 0.15 : 0.25);
   const scored = eligible.map(u=>({ u, s:scoreUnit(u, ctx), t:unitSeconds(u), counter:isCtr(u[0]) }))
     .sort((a,b)=> b.s - a.s || (a.u[0] < b.u[0] ? -1 : 1));
@@ -1372,14 +1385,14 @@ const REASON_CODES = new Set(["goal_match","neglected_goal","favorite","not_rece
 // `units` is an ordered array of units (a unit = [name] or [rightName, leftName]).
 function assemblePlan(inp, units, source, aiCodes){
   const onePass = units.flat();
-  const secOf = n => (inp.isCtr(n) ? inp.repTarget*3 : inp.holdSec) + SEC_OVERHEAD;
+  const secOf = n => (inp.isCtr(n) ? inp.repTarget*3 : holdFor(n, inp.holdSec)) + SEC_OVERHEAD;
   const passSec = onePass.reduce((t,n)=>t + secOf(n), 0);
   // The library is finite: if one pass is well short of the requested time, repeat the same ordered
   // sequence as extra rounds (max 3) instead of silently handing back a much shorter session.
   let rounds = 1;
   while(rounds < 3 && passSec * rounds < inp.budget * 0.7 && passSec * (rounds + 1) <= inp.budget * 1.08) rounds++;
   const names = []; for(let r = 0; r < rounds; r++) names.push(...onePass);
-  const steps = names.map(n=> inp.isCtr(n) ? counterStep(n, inp.repTarget) : holdStep(n, inp.holdSec));
+  const steps = names.map(n=> inp.isCtr(n) ? counterStep(n, inp.repTarget) : holdStep(n, holdFor(n, inp.holdSec)));
   const estMinutes = Math.max(1, Math.round(passSec * rounds / 60));
   const poseIdx = units.filter(u=>!inp.isCtr(u[0])).map(u=>LEVEL_ORDER.indexOf(DIFFICULTY[u[0]]));
   const minDiffIdx = poseIdx.length ? Math.min(...poseIdx) : 0;
@@ -1739,6 +1752,12 @@ window.showAccountScreen = async function(){
 // ============================================================
 // POSE LIBRARY (hold poses)
 // ============================================================
+// ---- asana expansion: helpers used while the library literal is evaluated ----
+// Shared smoothing profile for the new poses: the pose must be correct for 0.7 s before the hold timer starts,
+// brief dips (<= 0.5 s) pause the timer instead of wiping it, and lost tracking pauses it for up to 3 s.
+const _SM = { enter_ms:700, grace_ms:500, lost_ms:3000 };
+function _both(joint, msg){ return { ["left_" + joint]:msg, ["right_" + joint]:msg }; }
+
 const POSE_LIBRARY = {
   "Tadasana (Mountain Pose)": { joint_ranges: { left_knee:[165,180],right_knee:[165,180],left_hip:[160,180],right_hip:[160,180],left_elbow:[150,180],right_elbow:[150,180],left_shoulder:[0,20],right_shoulder:[0,20],left_wrist_below_shoulder:[0,1],right_wrist_below_shoulder:[0,1] } },
   "Pranamasana (Prayer Pose)": { joint_ranges: { left_knee:[160,180],right_knee:[160,180],left_hip:[160,180],right_hip:[160,180],left_elbow:[30,100],right_elbow:[30,100],wrist_to_wrist_dist:[0.0,0.15] } },
@@ -1769,8 +1788,179 @@ const POSE_LIBRARY = {
   "Anjaneyasana (Left Leg Forward)": { joint_ranges: { left_knee:[70,110],right_knee:[150,180],left_shoulder:[150,180],right_shoulder:[150,180] } },
   "Skandasana (Right Leg Bent)": { joint_ranges: { right_knee:[30,90],left_knee:[150,180] } },
   "Skandasana (Left Leg Bent)": { joint_ranges: { left_knee:[30,90],right_knee:[150,180] } },
+  // ---- Asana library expansion (Stage 1 + reliable Stage 2). Extra optional engine fields on these entries:
+  //   min_known_fraction : share of this pose's measurements that must be visible before it can be judged at all
+  //   smoothing          : {enter_ms, grace_ms, lost_ms} hold-timer stability (existing poses have none => unchanged)
+  //   cues / friendly    : gentle, specific alignment messages / readable metric names
+  "Utkatasana (Chair Pose)": { friendly:true, min_known_fraction:0.5, smoothing:_SM, joint_ranges: { left_knee:[80,150],right_knee:[80,150],left_hip:[60,150],right_hip:[60,150],torso_tilt_deg:[0,70] },
+    cues:{ ..._both("knee",{low:"Lift your hips a little - your knees are bending quite deeply",high:"Bend your knees a little more, as if sitting back into a chair"}),
+           ..._both("hip",{low:"Lengthen your torso a little, lifting your chest",high:"Hinge forward slightly from your hips"}),
+           torso_tilt_deg:{high:"Lift your chest a little so your torso is not collapsing forward"} } },
+  "Parighasana (Right Leg Extended)": { friendly:true, min_known_fraction:1, smoothing:_SM, joint_ranges: { right_knee:[155,180],ankle_spread_leg_norm:[0.45,2.5],lean_right_norm:[0.08,0.8],left_shin_norm:[0,0.4] },
+    cues:{ right_knee:{low:"Straighten your extended leg - a very slight bend is fine"}, ankle_spread_leg_norm:{low:"Extend your leg out a little further to the side"}, lean_right_norm:{low:"Bend sideways over the extended leg, only as far as feels comfortable"}, left_shin_norm:{high:"Kneel with your lower leg tucked straight behind you"} } },
+  "Parighasana (Left Leg Extended)": { friendly:true, min_known_fraction:1, smoothing:_SM, joint_ranges: { left_knee:[155,180],ankle_spread_leg_norm:[0.45,2.5],lean_left_norm:[0.08,0.8],right_shin_norm:[0,0.4] },
+    cues:{ left_knee:{low:"Straighten your extended leg - a very slight bend is fine"}, ankle_spread_leg_norm:{low:"Extend your leg out a little further to the side"}, lean_left_norm:{low:"Bend sideways over the extended leg, only as far as feels comfortable"}, right_shin_norm:{high:"Kneel with your lower leg tucked straight behind you"} } },
+  "Viparita Virabhadrasana (Right Leg Forward)": { friendly:true, min_known_fraction:0.6, smoothing:_SM, joint_ranges: { right_knee:[70,115],left_knee:[150,180],right_shoulder:[135,180],left_shoulder:[0,90],ankle_spread_leg_norm:[0.5,2.5],torso_tilt_deg:[0,55] },
+    cues:{ right_knee:{low:"Ease your front knee back slightly so it stays over your ankle",high:"Bend your front knee a little more"}, left_knee:{low:"Straighten your back leg"},
+           right_shoulder:{low:"Reach your front arm up and back"}, left_shoulder:{high:"Rest your back hand lightly on your back leg"}, ankle_spread_leg_norm:{low:"Step your feet a little wider"} , torso_tilt_deg:{high:"Keep your chest lifted - lean back only slightly"} } },
+  "Viparita Virabhadrasana (Left Leg Forward)": { friendly:true, min_known_fraction:0.6, smoothing:_SM, joint_ranges: { left_knee:[70,115],right_knee:[150,180],left_shoulder:[135,180],right_shoulder:[0,90],ankle_spread_leg_norm:[0.5,2.5],torso_tilt_deg:[0,55] },
+    cues:{ left_knee:{low:"Ease your front knee back slightly so it stays over your ankle",high:"Bend your front knee a little more"}, right_knee:{low:"Straighten your back leg"},
+           left_shoulder:{low:"Reach your front arm up and back"}, right_shoulder:{high:"Rest your back hand lightly on your back leg"}, ankle_spread_leg_norm:{low:"Step your feet a little wider"} , torso_tilt_deg:{high:"Keep your chest lifted - lean back only slightly"} } },
+  "Ardha Uttanasana (Half Lift)": { friendly:true, min_known_fraction:0.5, smoothing:_SM, joint_ranges: { left_knee:[150,180],right_knee:[150,180],left_hip:[75,125],right_hip:[75,125],torso_tilt_deg:[55,120] },
+    cues:{ ..._both("knee",{low:"Straighten your legs a little - a slight bend is fine"}),
+           ..._both("hip",{low:"Lift your chest halfway up, aiming for a long, flat back",high:"Fold a little further forward, leading with your chest"}),
+           torso_tilt_deg:{low:"Fold a little further forward from your hips",high:"Lift your chest a little, keeping your back long"} } },
+  "Prasarita Padottanasana (Wide-Legged Forward Fold)": { friendly:true, min_known_fraction:0.6, smoothing:_SM, joint_ranges: { left_knee:[150,180],right_knee:[150,180],ankle_spread_leg_norm:[0.55,2.5],fold_depth_norm:[-0.1,1.3] },
+    cues:{ ..._both("knee",{low:"Straighten your legs a little - a slight bend is fine"}), ankle_spread_leg_norm:{low:"Step your feet a little wider apart"}, fold_depth_norm:{low:"Fold forward from your hips, keeping your back long"} } },
+  "Baddha Konasana (Bound Angle Pose)": { friendly:true, min_known_fraction:0.6, smoothing:_SM, joint_ranges: { left_knee:[15,90],right_knee:[15,90],ankle_spread_torso_norm:[0,0.6],knee_spread_torso_norm:[0.7,3.5],torso_tilt_deg:[0,40] },
+    cues:{ ..._both("knee",{high:"Let your knees open out to the sides, only as far as is comfortable"}), ankle_spread_torso_norm:{high:"Draw your heels a little closer to your body"},
+           knee_spread_torso_norm:{low:"Let your knees fall open - a cushion under your hips can help"}, torso_tilt_deg:{high:"Sit tall, lengthening your spine"} } },
+  "Dandasana (Staff Pose)": { friendly:true, min_known_fraction:0.5, smoothing:_SM, joint_ranges: { left_knee:[150,180],right_knee:[150,180],left_hip:[75,110],right_hip:[75,110],torso_tilt_deg:[0,25] },
+    cues:{ ..._both("knee",{low:"Press your thighs down and lengthen your legs - a slight bend is fine"}),
+           ..._both("hip",{low:"Sit a little taller - a folded blanket under your hips can help",high:"Bring your ribs forward and sit upright"}), torso_tilt_deg:{high:"Stack your shoulders over your hips"} } },
+  "Salamba Bhujangasana (Sphinx Pose)": { friendly:true, min_known_fraction:0.5, smoothing:_SM, joint_ranges: { left_elbow:[70,115],right_elbow:[70,115],left_forearm_flat_norm:[0,0.18],right_forearm_flat_norm:[0,0.18],left_hip:[135,178],right_hip:[135,178],left_knee:[150,180],right_knee:[150,180],torso_tilt_deg:[50,88] },
+    cues:{ ..._both("elbow",{low:"Place your elbows directly under your shoulders",high:"Bring your elbows closer in, under your shoulders"}), ..._both("forearm_flat_norm",{high:"Rest your forearms flat on the floor"}),
+           ..._both("hip",{low:"Keep your hips and legs relaxed down toward the floor"}), torso_tilt_deg:{low:"Lower your chest a little - lift only as far as feels comfortable",high:"Lift your chest slightly, pressing your forearms down"} } },
+  "Dandayamana Bharmanasana (Right Arm Forward)": { friendly:true, min_known_fraction:0.6, smoothing:_SM, joint_ranges: { right_shoulder:[140,180],right_elbow:[150,180],left_hip:[145,180],left_knee:[150,180],left_shoulder:[70,110],right_hip:[70,115],right_knee:[70,115],torso_tilt_deg:[60,120] },
+    cues:{ right_shoulder:{low:"Reach your right arm forward, in line with your ear"}, right_elbow:{low:"Lengthen your right arm"}, left_hip:{low:"Extend your left leg back in line with your hips"}, left_knee:{low:"Straighten your left leg"},
+           left_shoulder:{low:"Keep your left hand under your shoulder",high:"Keep your left hand under your shoulder"}, right_hip:{low:"Keep your right knee under your hip",high:"Keep your right knee under your hip"},
+           right_knee:{low:"Keep your right knee under your hip",high:"Keep your right knee under your hip"}, torso_tilt_deg:{low:"Keep your back level, like a tabletop",high:"Keep your back level, like a tabletop"} } },
+  "Dandayamana Bharmanasana (Left Arm Forward)": { friendly:true, min_known_fraction:0.6, smoothing:_SM, joint_ranges: { left_shoulder:[140,180],left_elbow:[150,180],right_hip:[145,180],right_knee:[150,180],right_shoulder:[70,110],left_hip:[70,115],left_knee:[70,115],torso_tilt_deg:[60,120] },
+    cues:{ left_shoulder:{low:"Reach your left arm forward, in line with your ear"}, left_elbow:{low:"Lengthen your left arm"}, right_hip:{low:"Extend your right leg back in line with your hips"}, right_knee:{low:"Straighten your right leg"},
+           right_shoulder:{low:"Keep your right hand under your shoulder",high:"Keep your right hand under your shoulder"}, left_hip:{low:"Keep your left knee under your hip",high:"Keep your left knee under your hip"},
+           left_knee:{low:"Keep your left knee under your hip",high:"Keep your left knee under your hip"}, torso_tilt_deg:{low:"Keep your back level, like a tabletop",high:"Keep your back level, like a tabletop"} } },
 };
 const ALL_POSES = Object.keys(POSE_LIBRARY);
+// ============================================================
+// ASANA EXPANSION - metadata + detection helpers (additive; existing poses keep their current behavior)
+// ============================================================
+const POSE_LABELS = {
+  left_knee:"Left knee", right_knee:"Right knee", left_hip:"Left hip", right_hip:"Right hip", left_elbow:"Left elbow", right_elbow:"Right elbow",
+  left_shoulder:"Left shoulder", right_shoulder:"Right shoulder", torso_tilt_deg:"Torso tilt", ankle_spread_leg_norm:"Stance width",
+  ankle_spread_torso_norm:"Feet apart", knee_spread_torso_norm:"Knee spread", fold_depth_norm:"Fold depth", lean_left_norm:"Side bend (left)",
+  lean_right_norm:"Side bend (right)", left_shin_norm:"Left lower leg", right_shin_norm:"Right lower leg", left_forearm_flat_norm:"Left forearm flat", right_forearm_flat_norm:"Right forearm flat",
+};
+const POSE_SAFETY_NOTE = "Move gently and stop if you feel pain, pinching or dizziness. This is general guidance, not medical advice, and automated feedback does not replace a qualified instructor.";
+// Human-facing metadata. `detection:"limited"` = the camera can only check part of the pose. Entries without this
+// map (the original poses) behave exactly as before; Anjaneyasana only gains search aliases.
+const POSE_INFO = {
+  "Utkatasana (Chair Pose)": { id:"utkatasana", sanskrit:"Utkatasana", english:"Chair Pose", aliases:["Chair","Fierce Pose","Utkatasana"], category:"standing", detection:"standard",
+    camera:"Stand side-on to the camera with your whole body in frame.", checks:"knee bend, hip hinge and torso position",
+    enter:"Stand with feet hip-width apart, bend your knees and sit your hips back as if lowering into a chair.", hold:"Keep your weight in your heels, your chest lifted and your arms wherever is comfortable (overhead or at your chest).", exit:"Press through your heels to straighten your legs and return to standing.",
+    suggested_hold:20, max_hold:30, modification:"Bend your knees less, or rest your back lightly against a wall.", safety:"Skip or go shallow if your knees feel uncomfortable." },
+  "Parighasana (Right Leg Extended)": { id:"parighasana_right", sanskrit:"Parighasana", english:"Gate Pose", aliases:["Gate","Parighasana","Gate Pose right"], category:"standing", detection:"limited",
+    camera:"Face the camera with your whole body in frame.", checks:"only the straight extended leg, the width of your stance and your side bend. The kneeling leg cannot be judged from the front",
+    enter:"Kneel on a padded mat, extend your right leg out to the side with the foot flat, then reach your right hand toward the leg and bend sideways.", hold:"Keep your hips squared forward and breathe evenly; bend only as far as feels comfortable.", exit:"Lift your torso upright, then bring the extended leg back in.",
+    suggested_hold:15, max_hold:25, modification:"Fold a blanket under your kneeling knee and keep your hand on your thigh instead of reaching down the leg.", safety:"Skip if kneeling bothers your knees." },
+  "Parighasana (Left Leg Extended)": { id:"parighasana_left", sanskrit:"Parighasana", english:"Gate Pose", aliases:["Gate","Parighasana","Gate Pose left"], category:"standing", detection:"limited",
+    camera:"Face the camera with your whole body in frame.", checks:"only the straight extended leg, the width of your stance and your side bend. The kneeling leg cannot be judged from the front",
+    enter:"Kneel on a padded mat, extend your left leg out to the side with the foot flat, then reach your left hand toward the leg and bend sideways.", hold:"Keep your hips squared forward and breathe evenly; bend only as far as feels comfortable.", exit:"Lift your torso upright, then bring the extended leg back in.",
+    suggested_hold:15, max_hold:25, modification:"Fold a blanket under your kneeling knee and keep your hand on your thigh instead of reaching down the leg.", safety:"Skip if kneeling bothers your knees." },
+  "Viparita Virabhadrasana (Right Leg Forward)": { id:"viparita_virabhadrasana_right", sanskrit:"Viparita Virabhadrasana", english:"Reverse Warrior", aliases:["Reverse Warrior","Peaceful Warrior","Viparita Virabhadrasana"], category:"standing", detection:"standard",
+    camera:"Face the camera with your feet and arms in frame.", checks:"front knee bend, straight back leg, stance width and arm positions",
+    enter:"From Warrior II with the right knee bent, turn your right palm up and sweep that arm overhead as your left hand slides lightly down your left leg.", hold:"Keep your front knee over the ankle and breathe; the side-bend is gentle.", exit:"Return to Warrior II, then straighten your legs.",
+    suggested_hold:15, max_hold:25, modification:"Shorten your stance and rest the back hand on your hip.", safety:"Keep the front knee tracking over the ankle; ease out if the knee or hip complains." },
+  "Viparita Virabhadrasana (Left Leg Forward)": { id:"viparita_virabhadrasana_left", sanskrit:"Viparita Virabhadrasana", english:"Reverse Warrior", aliases:["Reverse Warrior","Peaceful Warrior","Viparita Virabhadrasana"], category:"standing", detection:"standard",
+    camera:"Face the camera with your feet and arms in frame.", checks:"front knee bend, straight back leg, stance width and arm positions",
+    enter:"From Warrior II with the left knee bent, turn your left palm up and sweep that arm overhead as your right hand slides lightly down your right leg.", hold:"Keep your front knee over the ankle and breathe; the side-bend is gentle.", exit:"Return to Warrior II, then straighten your legs.",
+    suggested_hold:15, max_hold:25, modification:"Shorten your stance and rest the back hand on your hip.", safety:"Keep the front knee tracking over the ankle; ease out if the knee or hip complains." },
+  "Ardha Uttanasana (Half Lift)": { id:"ardha_uttanasana", sanskrit:"Ardha Uttanasana", english:"Half Lift", aliases:["Half Forward Fold","Standing Half Forward Bend","Ardha Uttanasana"], category:"standing", detection:"standard",
+    camera:"Stand side-on to the camera with your whole body in frame.", checks:"leg straightness, hip hinge and a roughly level torso",
+    enter:"From a forward fold, lift your chest halfway, placing your hands on your shins or thighs and lengthening your spine.", hold:"Look slightly forward, keep your neck long and your knees softly straight.", exit:"Fold forward again or roll up slowly to standing.",
+    suggested_hold:8, max_hold:20, modification:"Bend your knees as much as you like, or rest your hands higher on your thighs.", safety:"Keep your back long rather than rounded; ease out of it if your lower back is uncomfortable." },
+  "Prasarita Padottanasana (Wide-Legged Forward Fold)": { id:"prasarita_padottanasana", sanskrit:"Prasarita Padottanasana", english:"Wide-Legged Forward Fold", aliases:["Wide Legged Forward Bend","Wide-Leg Fold","Prasarita"], category:"standing", detection:"standard",
+    camera:"Face the camera with your whole body in frame.", checks:"stance width, leg straightness and how far you fold",
+    enter:"Step your feet wide, hands on your hips, then hinge forward from the hips with a long spine.", hold:"Let your head and arms hang or place hands on blocks, keeping your weight over your feet.", exit:"Bring your hands to your hips, lift your torso with a long spine, then step your feet together.",
+    suggested_hold:20, max_hold:40, modification:"Rest your hands on blocks or a chair seat and keep your knees slightly bent.", safety:"Come up slowly to avoid light-headedness." },
+  "Baddha Konasana (Bound Angle Pose)": { id:"baddha_konasana", sanskrit:"Baddha Konasana", english:"Bound Angle Pose", aliases:["Butterfly","Cobbler's Pose","Baddha Konasana"], category:"seated", detection:"standard",
+    camera:"Place the camera low, facing you, with your whole body in frame.", checks:"knees opening, feet drawn together and an upright spine",
+    enter:"Sit tall, bring the soles of your feet together and let your knees fall open.", hold:"Hold your feet or ankles, lengthen your spine and breathe; do not push your knees down.", exit:"Slowly bring your knees back together and extend your legs.",
+    suggested_hold:30, max_hold:60, modification:"Sit on a folded blanket and support your knees with cushions.", safety:"Never force the knees toward the floor; stay within a comfortable range." },
+  "Dandasana (Staff Pose)": { id:"dandasana", sanskrit:"Dandasana", english:"Staff Pose", aliases:["Staff","Seated Mountain","Dandasana"], category:"seated", detection:"standard",
+    camera:"Sit side-on to the camera, low, with your whole body in frame.", checks:"leg straightness, hip angle and an upright torso",
+    enter:"Sit with your legs extended straight in front of you and your hands beside your hips.", hold:"Stack your shoulders over your hips and lengthen through the crown of your head.", exit:"Bend your knees and release your legs.",
+    suggested_hold:30, max_hold:60, modification:"Sit on a folded blanket or bend your knees slightly if your hamstrings are tight.", safety:"Do not round forward to force the legs straight." },
+  "Salamba Bhujangasana (Sphinx Pose)": { id:"salamba_bhujangasana", sanskrit:"Salamba Bhujangasana", english:"Sphinx Pose", aliases:["Sphinx","Supported Cobra","Salamba Bhujangasana"], category:"floor", detection:"limited",
+    camera:"Lie side-on to a low camera with your whole body in frame.", checks:"forearm and elbow position, and a gentle lift of the chest. Floor poses can be hard for the camera to read",
+    enter:"Lie on your stomach, place your forearms on the floor with your elbows under your shoulders and lift your chest.", hold:"Keep your legs relaxed, your neck long and the lift gentle.", exit:"Slowly lower your chest to the floor and rest.",
+    suggested_hold:20, max_hold:45, modification:"Place your elbows slightly forward of your shoulders for a smaller lift.", safety:"Lift only as far as is comfortable; stop if you feel pinching in your lower back or neck." },
+  "Dandayamana Bharmanasana (Right Arm Forward)": { id:"bird_dog_right_arm", sanskrit:"Dandayamana Bharmanasana", english:"Bird Dog", aliases:["Bird Dog","Opposite Arm and Leg Reach","Dandayamana Bharmanasana"], category:"floor", detection:"limited",
+    camera:"Get on all fours side-on to a low camera with your whole body in frame.", checks:"extended arm and opposite leg, supporting limbs and a level back. Floor poses can be hard for the camera to read",
+    enter:"From hands and knees, reach your right arm forward and your left leg back at the same time.", hold:"Keep your hips and shoulders level and your back long.", exit:"Lower both limbs and return to hands and knees.",
+    suggested_hold:10, max_hold:20, modification:"Extend only the leg or only the arm, and pad your knees.", safety:"Keep your spine neutral; skip if wrists or knees are sensitive." },
+  "Dandayamana Bharmanasana (Left Arm Forward)": { id:"bird_dog_left_arm", sanskrit:"Dandayamana Bharmanasana", english:"Bird Dog", aliases:["Bird Dog","Opposite Arm and Leg Reach","Dandayamana Bharmanasana"], category:"floor", detection:"limited",
+    camera:"Get on all fours side-on to a low camera with your whole body in frame.", checks:"extended arm and opposite leg, supporting limbs and a level back. Floor poses can be hard for the camera to read",
+    enter:"From hands and knees, reach your left arm forward and your right leg back at the same time.", hold:"Keep your hips and shoulders level and your back long.", exit:"Lower both limbs and return to hands and knees.",
+    suggested_hold:10, max_hold:20, modification:"Extend only the leg or only the arm, and pad your knees.", safety:"Keep your spine neutral; skip if wrists or knees are sensitive." },
+  // Existing poses: search aliases only (no behavior change). Anjaneyasana's current detection (straight back leg, arms up) also suits a High Lunge.
+  "Anjaneyasana (Right Leg Forward)": { aliases:["Low Lunge","High Lunge","Crescent Lunge","Anjaneyasana"] },
+  "Anjaneyasana (Left Leg Forward)":  { aliases:["Low Lunge","High Lunge","Crescent Lunge","Anjaneyasana"] },
+};
+function holdFor(name, holdSec){ const c = POSE_INFO[name] && POSE_INFO[name].max_hold; return c ? Math.min(holdSec, c) : holdSec; }
+
+// ---- detection state + stability (opt-in per pose; legacy poses fall straight through) ----
+let holdGateState = { okSince:null, lastOk:null, active:false };
+let holdPausedAt = null;
+let holdUserAdjusted = false;
+let poseCueState = { key:"", since:0 };
+function resetPoseGate(){ holdGateState = { okSince:null, lastOk:null, active:false }; holdPausedAt = null; poseCueState = { key:"", since:0 }; }
+// 'ok' = enough landmarks are visible to judge; 'cannot-evaluate' = too few visible: no correct/incorrect claim is made.
+function poseEvalState(rules, results){
+  const f = rules && rules.min_known_fraction;
+  if(!f) return "ok";
+  const vals = Object.values(results), known = vals.filter(r=>r !== null).length;
+  return (vals.length && known / vals.length >= f) ? "ok" : "cannot-evaluate";
+}
+// -> "ok" (count the hold) | "pause" (freeze the timer) | "reset" (start over)
+function holdGate(rules, allCorrect, evalState, now){
+  const sm = rules && rules.smoothing;
+  if(!sm) return allCorrect ? "ok" : "reset";
+  const G = holdGateState;
+  if(allCorrect){
+    if(G.okSince === null) G.okSince = now;
+    G.lastOk = now;
+    if(G.active || now - G.okSince >= sm.enter_ms){ G.active = true; return "ok"; }
+    return "reset";
+  }
+  if(!G.active){ G.okSince = null; return "reset"; }
+  const gap = now - G.lastOk;
+  if(evalState === "cannot-evaluate") { if(gap <= sm.lost_ms) return "pause"; }
+  else if(gap <= sm.grace_ms) return "pause";
+  G.active = false; G.okSince = null; return "reset";
+}
+// One gentle message, shown only after the same issue has persisted for 0.7 s so feedback doesn't flicker.
+function poseCueText(rules, results, metrics, evalState, now){
+  if(!rules || !rules.cues || evalState === "cannot-evaluate"){ poseCueState = { key:"", since:now }; return ""; }
+  let key = "", msg = "";
+  for(const j of Object.keys(rules.joint_ranges)){
+    if(results[j] !== false) continue;
+    const [lo, hi] = rules.joint_ranges[j], c = rules.cues[j];
+    if(!c) continue;
+    const m = (metrics[j] ?? 0) < lo ? c.low : c.high;
+    if(m){ key = j + (metrics[j] < lo ? ":lo" : ":hi"); msg = m; break; }
+  }
+  if(!key){ poseCueState = { key:"", since:now }; return ""; }
+  if(poseCueState.key !== key) poseCueState = { key, since:now };
+  return (now - poseCueState.since >= 700) ? msg : "";
+}
+function poseInfoHtml(name){
+  const i = POSE_INFO[name], r = POSE_LIBRARY[name];
+  if(!i || !i.enter) return "";
+  const esc = escapeHtml;
+  const names = [i.sanskrit && i.sanskrit !== i.english ? i.sanskrit : "", ...(i.aliases || []).filter(a=>a !== i.english && a !== i.sanskrit).slice(0, 2)].filter(Boolean);
+  return '<details class="pose-info"><summary>Setup, camera and safety</summary>' +
+    (names.length ? '<p class="pi-names">Also known as: ' + esc(names.join(", ")) + '</p>' : '') +
+    '<p><b>Camera:</b> ' + esc(i.camera) + '</p>' +
+    (i.detection === "limited" ? '<p class="pi-limited"><b>Limited detection:</b> YogaAI can only check ' + esc(i.checks) + '. Use a mirror or an instructor for the rest.</p>' : '<p><b>Checks:</b> ' + esc(i.checks) + '.</p>') +
+    '<p><b>Enter:</b> ' + esc(i.enter) + '</p><p><b>Hold:</b> ' + esc(i.hold) + '</p><p><b>Exit:</b> ' + esc(i.exit) + '</p>' +
+    '<p><b>Easier option:</b> ' + esc(i.modification) + '</p><p><b>Safety:</b> ' + esc(i.safety) + ' ' + esc(POSE_SAFETY_NOTE) + '</p></details>';
+}
+function renderPoseInfo(name){
+  const box = document.getElementById("pose-info"); if(!box) return;
+  const h = poseInfoHtml(name); box.innerHTML = h; box.style.display = h ? "block" : "none";
+  const cue = document.getElementById("pose-cue"); if(cue){ cue.textContent = ""; cue.style.display = "none"; }
+}
+
 
 // ============================================================
 // COUNTER LIBRARY (rep-based)
@@ -1811,6 +2001,8 @@ const DIFFICULTY = {
   "Trikonasana (Triangle Pose)":"intermediate","Parsvottanasana (Pyramid Pose)":"intermediate",
   "Anjaneyasana (Right Leg Forward)":"intermediate","Anjaneyasana (Left Leg Forward)":"intermediate",
   "Skandasana (Right Leg Bent)":"intermediate","Skandasana (Left Leg Bent)":"intermediate",
+  "Utkatasana (Chair Pose)":"beginner","Parighasana (Right Leg Extended)":"intermediate","Parighasana (Left Leg Extended)":"intermediate","Viparita Virabhadrasana (Right Leg Forward)":"intermediate","Viparita Virabhadrasana (Left Leg Forward)":"intermediate","Ardha Uttanasana (Half Lift)":"beginner","Prasarita Padottanasana (Wide-Legged Forward Fold)":"intermediate","Baddha Konasana (Bound Angle Pose)":"beginner","Dandasana (Staff Pose)":"beginner","Salamba Bhujangasana (Sphinx Pose)":"beginner","Dandayamana Bharmanasana (Right Arm Forward)":"beginner","Dandayamana Bharmanasana (Left Arm Forward)":"beginner",
+  
   "Push-up Counter":"beginner","Pull-up Counter":"advanced","Squat Counter":"beginner","Jumping Jacks Counter":"beginner",
   "Dands (Hindu Push-ups) Counter":"intermediate",
   "Tibetan Rite 1 (Spinning)":"beginner","Tibetan Rite 2 (Leg Raises) Counter":"beginner","Tibetan Rite 3 (Back Stretch) Counter":"beginner",
@@ -1819,12 +2011,12 @@ const DIFFICULTY = {
 const LEVEL_ORDER = ["beginner","intermediate","advanced"];
 
 const ISSUE_AVOID_MAP = {
-  "Knee": ["Ashwa Sanchalanasana (Right Leg Back)","Ashwa Sanchalanasana (Left Leg Back)","Squat Counter","Vrikshasana (Right Foot Up)","Vrikshasana (Left Foot Up)","Camel Pose (Ustrasana)","Malasana (Garland Pose)","Skandasana (Right Leg Bent)","Skandasana (Left Leg Bent)","Devyasana (Goddess Pose)"],
-  "Hip": ["Padangusthasana (Big Toe Pose / Forward Bend)","Ashwa Sanchalanasana (Right Leg Back)","Ashwa Sanchalanasana (Left Leg Back)","Hanumanasana (Monkey Pose / Splits)","Virabhadrasana II (Right Leg Forward)","Virabhadrasana II (Left Leg Forward)","Trikonasana (Triangle Pose)","Parsvottanasana (Pyramid Pose)","Anjaneyasana (Right Leg Forward)","Anjaneyasana (Left Leg Forward)","Skandasana (Right Leg Bent)","Skandasana (Left Leg Bent)"],
-  "Neck": ["Bhujangasana (Cobra Pose)","Adho Mukha Svanasana (Downward Dog)","Chakrasana (Wheel Pose)","Dhanurasana (Bow Pose)","Camel Pose (Ustrasana)","Urdhva Mukha Svanasana (Upward Dog)","Tibetan Rite 5 (Updog-Downdog) Counter"],
-  "Lower back": ["Bhujangasana (Cobra Pose)","Padangusthasana (Big Toe Pose / Forward Bend)","Chakrasana (Wheel Pose)","Dhanurasana (Bow Pose)","Camel Pose (Ustrasana)","Urdhva Mukha Svanasana (Upward Dog)","Tibetan Rite 3 (Back Stretch) Counter"],
-  "Shoulder": ["Urdhva Hastasana (Raised Arms Pose)","Phalakasana (Plank Pose)","Adho Mukha Svanasana (Downward Dog)","Chakrasana (Wheel Pose)","Push-up Counter","Pull-up Counter","Chaturanga Dandasana (Low Plank)","Dands (Hindu Push-ups) Counter"],
-  "Wrist": ["Phalakasana (Plank Pose)","Adho Mukha Svanasana (Downward Dog)","Bhujangasana (Cobra Pose)","Chakrasana (Wheel Pose)","Push-up Counter","Pull-up Counter","Camel Pose (Ustrasana)","Chaturanga Dandasana (Low Plank)","Dands (Hindu Push-ups) Counter"],
+  "Knee": ["Utkatasana (Chair Pose)","Parighasana (Right Leg Extended)","Parighasana (Left Leg Extended)","Viparita Virabhadrasana (Right Leg Forward)","Viparita Virabhadrasana (Left Leg Forward)","Baddha Konasana (Bound Angle Pose)","Dandayamana Bharmanasana (Right Arm Forward)","Dandayamana Bharmanasana (Left Arm Forward)","Ashwa Sanchalanasana (Right Leg Back)","Ashwa Sanchalanasana (Left Leg Back)","Squat Counter","Vrikshasana (Right Foot Up)","Vrikshasana (Left Foot Up)","Camel Pose (Ustrasana)","Malasana (Garland Pose)","Skandasana (Right Leg Bent)","Skandasana (Left Leg Bent)","Devyasana (Goddess Pose)"],
+  "Hip": ["Viparita Virabhadrasana (Right Leg Forward)","Viparita Virabhadrasana (Left Leg Forward)","Parighasana (Right Leg Extended)","Parighasana (Left Leg Extended)","Prasarita Padottanasana (Wide-Legged Forward Fold)","Baddha Konasana (Bound Angle Pose)","Padangusthasana (Big Toe Pose / Forward Bend)","Ashwa Sanchalanasana (Right Leg Back)","Ashwa Sanchalanasana (Left Leg Back)","Hanumanasana (Monkey Pose / Splits)","Virabhadrasana II (Right Leg Forward)","Virabhadrasana II (Left Leg Forward)","Trikonasana (Triangle Pose)","Parsvottanasana (Pyramid Pose)","Anjaneyasana (Right Leg Forward)","Anjaneyasana (Left Leg Forward)","Skandasana (Right Leg Bent)","Skandasana (Left Leg Bent)"],
+  "Neck": ["Salamba Bhujangasana (Sphinx Pose)","Bhujangasana (Cobra Pose)","Adho Mukha Svanasana (Downward Dog)","Chakrasana (Wheel Pose)","Dhanurasana (Bow Pose)","Camel Pose (Ustrasana)","Urdhva Mukha Svanasana (Upward Dog)","Tibetan Rite 5 (Updog-Downdog) Counter"],
+  "Lower back": ["Ardha Uttanasana (Half Lift)","Prasarita Padottanasana (Wide-Legged Forward Fold)","Salamba Bhujangasana (Sphinx Pose)","Bhujangasana (Cobra Pose)","Padangusthasana (Big Toe Pose / Forward Bend)","Chakrasana (Wheel Pose)","Dhanurasana (Bow Pose)","Camel Pose (Ustrasana)","Urdhva Mukha Svanasana (Upward Dog)","Tibetan Rite 3 (Back Stretch) Counter"],
+  "Shoulder": ["Viparita Virabhadrasana (Right Leg Forward)","Viparita Virabhadrasana (Left Leg Forward)","Dandayamana Bharmanasana (Right Arm Forward)","Dandayamana Bharmanasana (Left Arm Forward)","Urdhva Hastasana (Raised Arms Pose)","Phalakasana (Plank Pose)","Adho Mukha Svanasana (Downward Dog)","Chakrasana (Wheel Pose)","Push-up Counter","Pull-up Counter","Chaturanga Dandasana (Low Plank)","Dands (Hindu Push-ups) Counter"],
+  "Wrist": ["Dandayamana Bharmanasana (Right Arm Forward)","Dandayamana Bharmanasana (Left Arm Forward)","Phalakasana (Plank Pose)","Adho Mukha Svanasana (Downward Dog)","Bhujangasana (Cobra Pose)","Chakrasana (Wheel Pose)","Push-up Counter","Pull-up Counter","Camel Pose (Ustrasana)","Chaturanga Dandasana (Low Plank)","Dands (Hindu Push-ups) Counter"],
 };
 const ISSUE_NAMES = Object.keys(ISSUE_AVOID_MAP);
 
@@ -1835,8 +2027,27 @@ const POSE_CONNECTIONS = [[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24
 // ============================================================
 function calcAngle(a,b,c){ const ba={x:a.x-b.x,y:a.y-b.y},bc={x:c.x-b.x,y:c.y-b.y}; const dot=ba.x*bc.x+ba.y*bc.y; const magBa=Math.hypot(ba.x,ba.y),magBc=Math.hypot(bc.x,bc.y); if(magBa===0||magBc===0)return 0; let cosA=dot/(magBa*magBc); cosA=Math.max(-1,Math.min(1,cosA)); return Math.acos(cosA)*180/Math.PI; }
 function calcDist(a,b){ return Math.hypot(a.x-b.x,a.y-b.y); }
-function getPoseMetrics(lm){
+// Extra measurements for the expanded library. Distances are normalised by a body dimension (torso or leg length)
+// so thresholds hold across body sizes and camera distances; angles are in degrees.
+function extraMetrics(lm){
+  const mid = (a,b)=>({ x:(a.x+b.x)/2, y:(a.y+b.y)/2 });
+  const sh = mid(lm[11],lm[12]), hp = mid(lm[23],lm[24]);
+  const torso = Math.max(calcDist(sh,hp), 1e-6);
+  const leg = Math.max((calcDist(lm[23],lm[27]) + calcDist(lm[24],lm[28])) / 2, 1e-6);
   return {
+    torso_tilt_deg: Math.atan2(Math.abs(sh.x - hp.x), hp.y - sh.y) * 180 / Math.PI,      // 0 = upright, 90 = horizontal, >90 = shoulders below hips
+    ankle_spread_leg_norm: calcDist(lm[27],lm[28]) / leg,
+    ankle_spread_torso_norm: calcDist(lm[27],lm[28]) / torso,
+    knee_spread_torso_norm: calcDist(lm[25],lm[26]) / torso,
+    fold_depth_norm: (sh.y - hp.y) / leg,                                                  // negative while shoulders are above hips
+    lean_left_norm: (sh.x - hp.x) / torso,                                                 // + when leaning toward the person's left (facing the camera)
+    lean_right_norm: (hp.x - sh.x) / torso,
+    left_forearm_flat_norm: Math.abs(lm[15].y - lm[13].y) / torso, right_forearm_flat_norm: Math.abs(lm[16].y - lm[14].y) / torso,
+    left_shin_norm: calcDist(lm[25],lm[27]) / leg, right_shin_norm: calcDist(lm[26],lm[28]) / leg,        // short in 2D when the shin points away from the camera (kneeling)
+  };
+}
+function getPoseMetrics(lm){
+  return { ...extraMetrics(lm),
     left_knee:calcAngle(lm[23],lm[25],lm[27]), right_knee:calcAngle(lm[24],lm[26],lm[28]),
     left_elbow:calcAngle(lm[11],lm[13],lm[15]), right_elbow:calcAngle(lm[12],lm[14],lm[16]),
     left_hip:calcAngle(lm[11],lm[23],lm[25]), right_hip:calcAngle(lm[12],lm[24],lm[26]),
@@ -1861,6 +2072,10 @@ const METRIC_LANDMARKS = {
   wrist_to_wrist_dist:[15,16], ankle_dist:[27,28],
   right_ankle_to_left_knee_dist:[28,25], left_ankle_to_right_knee_dist:[27,26],
   left_wrist_below_shoulder:[15,11], right_wrist_below_shoulder:[16,12],
+  torso_tilt_deg:[11,12,23,24], ankle_spread_leg_norm:[23,24,27,28], ankle_spread_torso_norm:[11,12,23,24,27,28], knee_spread_torso_norm:[11,12,23,24,25,26],
+  fold_depth_norm:[11,12,23,24,27,28], lean_left_norm:[11,12,23,24], lean_right_norm:[11,12,23,24],
+  left_forearm_flat_norm:[13,15,11,12,23,24], right_forearm_flat_norm:[14,16,11,12,23,24],
+  left_shin_norm:[23,24,25,27,28], right_shin_norm:[23,24,26,27,28],
 };
 const MIN_VISIBILITY = 0.5;
 
@@ -1931,6 +2146,19 @@ const REF_TIPS = {
   "Tibetan Rite 3 (Back Stretch) Counter":"Kneeling, alternate leaning back and curling forward.",
   "Tibetan Rite 4 (Table Stretch) Counter":"Seated, lift hips into a tabletop shape, then lower.",
   "Tibetan Rite 5 (Updog-Downdog) Counter":"Flow between upward dog and downward dog.",
+  "Utkatasana (Chair Pose)":"Bend your knees and sit your hips back as if into a chair, chest lifted, arms up or at your chest.",
+  "Parighasana (Right Leg Extended)":"Gate Pose - kneel, extend your right leg out to the side and bend sideways over it.",
+  "Parighasana (Left Leg Extended)":"Gate Pose - kneel, extend your left leg out to the side and bend sideways over it.",
+  "Viparita Virabhadrasana (Right Leg Forward)":"Reverse Warrior - from Warrior II, right knee bent: right arm sweeps overhead, left hand rests on the back leg.",
+  "Viparita Virabhadrasana (Left Leg Forward)":"Reverse Warrior - from Warrior II, left knee bent: left arm sweeps overhead, right hand rests on the back leg.",
+  "Ardha Uttanasana (Half Lift)":"Halfway up from a forward fold: hands on shins, long flat back, gaze slightly forward.",
+  "Prasarita Padottanasana (Wide-Legged Forward Fold)":"Feet wide apart, fold forward from the hips with straight legs and a long spine.",
+  "Baddha Konasana (Bound Angle Pose)":"Seated, soles of the feet together, knees open, spine tall.",
+  "Dandasana (Staff Pose)":"Seated with legs straight out in front, spine tall, shoulders over hips.",
+  "Salamba Bhujangasana (Sphinx Pose)":"Lying on your stomach, forearms on the floor, elbows under shoulders, chest gently lifted.",
+  "Dandayamana Bharmanasana (Right Arm Forward)":"Bird Dog - on hands and knees, reach the right arm forward and the left leg back, back level.",
+  "Dandayamana Bharmanasana (Left Arm Forward)":"Bird Dog - on hands and knees, reach the left arm forward and the right leg back, back level.",
+
 };
 
 // ============================================================
@@ -2022,6 +2250,19 @@ const POSE_GOALS = {
   "Squat Counter": ["strength","mobility"],
   "Jumping Jacks Counter": ["general fitness"],
   "Dands (Hindu Push-ups) Counter": ["strength","general fitness"],
+  "Utkatasana (Chair Pose)":["strength", "mobility"],
+  "Parighasana (Right Leg Extended)":["flexibility", "mobility"],
+  "Parighasana (Left Leg Extended)":["flexibility", "mobility"],
+  "Viparita Virabhadrasana (Right Leg Forward)":["flexibility", "strength"],
+  "Viparita Virabhadrasana (Left Leg Forward)":["flexibility", "strength"],
+  "Ardha Uttanasana (Half Lift)":["flexibility", "mobility"],
+  "Prasarita Padottanasana (Wide-Legged Forward Fold)":["flexibility", "relaxation"],
+  "Baddha Konasana (Bound Angle Pose)":["flexibility", "relaxation", "mobility"],
+  "Dandasana (Staff Pose)":["mobility"],
+  "Salamba Bhujangasana (Sphinx Pose)":["flexibility", "relaxation"],
+  "Dandayamana Bharmanasana (Right Arm Forward)":["strength", "balance"],
+  "Dandayamana Bharmanasana (Left Arm Forward)":["strength", "balance"],
+
 };
 
 // --- Build the Personalize screen's static form controls ONCE, same
@@ -2339,11 +2580,15 @@ window.showFreeExercise = function(){
   const posesList = document.getElementById("free-poses-list");
   const countersList = document.getElementById("free-counters-list");
   posesList.innerHTML=""; countersList.innerHTML="";
+  const sInp = document.getElementById("free-search");
+  if(sInp){ sInp.value = ""; sInp.oninput = () => { const q = sInp.value.trim().toLowerCase(); posesList.querySelectorAll(".fav-row").forEach(r => { r.style.display = (!q || (r.dataset.q || "").includes(q)) ? "" : "none"; }); }; }
   ALL_POSES.forEach(pose=>{
     const btn=document.createElement("button"); btn.className="pose-btn";
-    btn.innerHTML=`<span>${pose}</span><span class="tag">${DIFFICULTY[pose]}</span>`;
+    const pi = POSE_INFO[pose];
+    btn.innerHTML=`<span>${pose}</span><span class="tag">${DIFFICULTY[pose]}${pi && pi.detection==="limited" ? '<span class="tag-limited">limited detection</span>' : ''}</span>`;
     btn.onclick=()=>startSingle(pose, ALL_POSES);
     const row=document.createElement("div"); row.className="fav-row";
+    row.dataset.q = (pose + " " + ((pi && pi.aliases) || []).join(" ") + " " + ((pi && pi.sanskrit) || "")).toLowerCase();
     row.appendChild(btn); row.appendChild(makeFavButton("asana", pose, pose));
     posesList.appendChild(row);
   });
@@ -2473,7 +2718,7 @@ async function saveKriyasToStorage(){
 // `wrangler deploy` prints the real URL - paste it here, keeping the
 // "/api/chat" path on the end. This is a public URL, safe to hard-code
 // (it is NOT a secret - only the API key inside the Worker is secret).
-const WORKER_URL = "https://" + "yoga-assistant-worker" + ".yogai.workers.dev" + "/api/chat";
+const WORKER_URL = "https://yoga-assistant-worker.yogai.workers.dev/api/chat";
 const KRIYAS_API_URL = WORKER_URL.replace("/api/chat", "/api/kriyas");
 
 const DEFAULT_SYSTEM_PROMPT = "You are a friendly, knowledgeable yoga and fitness assistant embedded in a yoga practice app. Help the user with questions about yoga poses, exercise form, and wellness, and with using this app. Keep answers concise and encouraging.";
@@ -3048,7 +3293,7 @@ async function openCamera(){
 
 window.startSingle = async function(name, listContext, opts){
   practiceMode='single';
-  if (!(opts && opts.keepSession)) { recStart("free", null, null); lastLaunch = { kind:"single", name, list:listContext }; }
+  if (!(opts && opts.keepSession)) { holdUserAdjusted = false; recStart("free", null, null); lastLaunch = { kind:"single", name, list:listContext }; }
   poseListForPractice = listContext || [...ALL_POSES,...ALL_COUNTERS];
   poseIndex = poseListForPractice.indexOf(name); if(poseIndex<0) poseIndex=0;
   resetHoldAndCounter();
@@ -3090,13 +3335,19 @@ window.startCalorieMode = async function(name){
   if(await openCamera()) loop();
 };
 
-function resetHoldAndCounter(){ holdStartTime=null; elapsed=0; counterState="down"; counterCount=0; timedStart=null; lastPostureCue=null; lastPersonDetected=true; cueCandidate=null; cueCandidateStartTime=null; }
+function resetHoldAndCounter(){ resetPoseGate(); holdStartTime=null; elapsed=0; counterState="down"; counterCount=0; timedStart=null; lastPostureCue=null; lastPersonDetected=true; cueCandidate=null; cueCandidateStartTime=null; }
 
 function updatePracticeUI(){
   const name = poseListForPractice[poseIndex];
   document.getElementById("practice-title").textContent = "Practicing: "+name;
   document.getElementById("practice-tip").textContent = REF_TIPS[name]||"";
   refreshPracticeFav(name);
+  renderPoseInfo(name);
+  // New poses carry a suggested hold; everything else keeps the original 15 s default unless the user changed it.
+  if(practiceMode==='single' && !holdUserAdjusted && !isCounter(name)){
+    holdSecondsTarget = (POSE_INFO[name] && POSE_INFO[name].suggested_hold) || 15;
+    document.getElementById("timer-display").textContent = `0.0s / ${holdSecondsTarget}s`;
+  }
   document.getElementById("hold-mode-controls").style.display = (!isCounter(name) && practiceMode!=='calorie') ? "flex":"none";
   document.getElementById("counter-mode-controls").style.display = (isCounter(name) && practiceMode!=='calorie') ? "flex":"none";
   document.getElementById("calorie-mode-controls").style.display = practiceMode==='calorie' ? "block":"none";
@@ -3110,6 +3361,7 @@ function updateSequenceUI(){
   document.getElementById("practice-title").textContent = step.name;
   document.getElementById("practice-tip").textContent = REF_TIPS[step.name]||"";
   refreshPracticeFav(step.name);
+  renderPoseInfo(step.name);
   document.getElementById("hold-mode-controls").style.display = step.type==='hold' ? "flex":"none";
   document.getElementById("counter-mode-controls").style.display = step.type==='counter' ? "flex":"none";
   document.getElementById("timed-mode-controls").style.display = step.type==='timed' ? "block":"none";
@@ -3127,7 +3379,7 @@ function renderMiniPoseList(){
   });
 }
 window.stepPose = function(dir){ poseIndex=(poseIndex+dir+poseListForPractice.length)%poseListForPractice.length; resetHoldAndCounter(); updatePracticeUI(); renderMiniPoseList(); };
-window.adjustTimer = function(delta){ holdSecondsTarget=Math.max(5,holdSecondsTarget+delta); document.getElementById("timer-display").textContent=`${holdSecondsTarget}s target`; };
+window.adjustTimer = function(delta){ holdUserAdjusted=true; holdSecondsTarget=Math.max(5,holdSecondsTarget+delta); document.getElementById("timer-display").textContent=`${holdSecondsTarget}s target`; };
 window.resetCounter = function(){
   if (rec && rec.curKey && rec.byKey[rec.curKey]) rec.byKey[rec.curKey].repsBank = rec.byKey[rec.curKey].reps; // keep reps already done
   counterCount=0; counterState="down";
@@ -3208,19 +3460,29 @@ function loop(){
     } else if(stepType==='hold'){
       const rules = POSE_LIBRARY[currentName];
       const visibility = getMetricVisibility(lm);
-      const {results, allCorrect} = checkPose(metrics, rules.joint_ranges, visibility);
-      if(allCorrect){
-        if(holdStartTime===null) holdStartTime=performance.now();
-        elapsed = (performance.now()-holdStartTime)/1000;
+      const checked = checkPose(metrics, rules.joint_ranges, visibility);
+      const results = checked.results;
+      // Poses that opt in (min_known_fraction) are judged only when enough landmarks are visible; otherwise no
+      // correct/incorrect claim is made. Original poses have no such field and behave exactly as before.
+      const evalState = poseEvalState(rules, results);
+      const allCorrect = checked.allCorrect && evalState === "ok";
+      const nowT = performance.now();
+      const gs = holdGate(rules, allCorrect, evalState, nowT);       // "ok" | "pause" | "reset" (legacy poses: ok iff allCorrect)
+      if(gs === "ok"){
+        if(holdStartTime===null) holdStartTime=nowT;
+        else if(holdPausedAt!==null) holdStartTime += nowT - holdPausedAt;   // resume without losing progress
+        holdPausedAt = null;
+        elapsed = (nowT-holdStartTime)/1000;
         if(elapsed>=holdSecondsTarget){
           if(practiceMode==='sequence' && sequenceState==='active'){ recMarkStepDone(); sequenceState="paused"; pauseStart=performance.now(); }
           else flashUntil = performance.now()+2000;
         }
-      } else { holdStartTime=null; elapsed=0; }
+      } else if(gs === "pause"){ if(holdPausedAt===null) holdPausedAt = nowT; }
+      else { holdStartTime=null; elapsed=0; holdPausedAt=null; }
 
       // --- Audio cue: name the single wrong joint type, or a general cue if several are wrong.
       // Only plays once the SAME wrongness has persisted for at least 1 full second. ---
-      const incorrectJoints = Object.keys(results).filter(j=>results[j]===false); // null = unseen, not "wrong"
+      const incorrectJoints = evalState==="cannot-evaluate" ? [] : Object.keys(results).filter(j=>results[j]===false); // null = unseen, not "wrong"; no corrections when the view is insufficient
       let cueKey = null;
       if(incorrectJoints.length===1){
         const j = incorrectJoints[0];
@@ -3246,12 +3508,18 @@ function loop(){
         }
       }
 
-      const nothingVisible = Object.values(results).every(r => r === null);
+      const nothingVisible = evalState==="cannot-evaluate" || Object.values(results).every(r => r === null);
       recFrame(currentName, "hold", { allCorrect, nothingVisible });
       pill.textContent = nothingVisible
         ? "Can't see you clearly - adjust camera/position"
-        : (allCorrect ? (performance.now()<flashUntil?"TARGET REACHED!":"POSE CORRECT") : "ADJUST POSE");
-      pill.className = "status-pill "+(allCorrect?"status-correct":"status-adjust");
+        : (gs==="ok" ? (performance.now()<flashUntil?"TARGET REACHED!":"POSE CORRECT") : "ADJUST POSE");
+      pill.className = "status-pill "+(gs==="ok"?"status-correct":"status-adjust");
+      const cueEl = document.getElementById("pose-cue");
+      if(cueEl && (rules.cues || rules.min_known_fraction)){
+        let ct = poseCueText(rules, results, metrics, evalState, performance.now());
+        if(evalState==="cannot-evaluate" && POSE_INFO[currentName]) ct = "Camera tip: " + POSE_INFO[currentName].camera;
+        if(cueEl.textContent !== ct){ cueEl.textContent = ct; cueEl.style.display = ct ? "block" : "none"; }
+      }
       document.getElementById("timer-display").textContent = `${elapsed.toFixed(1)}s / ${holdSecondsTarget}s`;
       metricList.innerHTML="";
       for(const joint of Object.keys(rules.joint_ranges)){
@@ -3259,10 +3527,10 @@ function loop(){
         const row=document.createElement("div"); row.className="metric-row";
         if(ok === null){
           // Low-confidence joint: don't show a number we can't trust.
-          row.innerHTML = `<span>${joint}</span><span style="color:var(--text-dim);">low visibility</span>`;
+          row.innerHTML = `<span>${rules.friendly ? (POSE_LABELS[joint]||joint) : joint}</span><span style="color:var(--text-dim);">low visibility</span>`;
         } else {
-          const displayVal = joint.includes("dist") ? val.toFixed(2) : (joint.includes("below")?val:val.toFixed(0)+"°");
-          row.innerHTML = `<span>${joint}</span><span class="${ok?"metric-ok":"metric-bad"}">${displayVal} ${ok?"OK":"ADJUST"}</span>`;
+          const displayVal = (joint.includes("dist")||joint.includes("norm")) ? val.toFixed(2) : (joint.includes("below")?val:val.toFixed(0)+"°");
+          row.innerHTML = `<span>${rules.friendly ? (POSE_LABELS[joint]||joint) : joint}</span><span class="${ok?"metric-ok":"metric-bad"}">${displayVal} ${ok?"OK":"ADJUST"}</span>`;
         }
         metricList.appendChild(row);
       }
@@ -3410,7 +3678,7 @@ function replaceSequenceStepInPlace(oldName, newName, pool, source){
   const i = sequenceIndex;
   const mk = (name, ref) => ALL_COUNTERS.includes(name)
     ? counterStep(name, (ref && ref.type === "counter") ? ref.target : recRepTarget())
-    : holdStep(name, (ref && ref.type === "hold") ? ref.target : ((authProfile && authProfile.asana_hold_time) || 15));
+    : holdStep(name, holdFor(name, (ref && ref.type === "hold") ? ref.target : ((authProfile && authProfile.asana_hold_time) || 15)));
   // Later repeats of the same painful exercise are recalculated too: each gets the next valid option
   // that is not already used, instead of blindly repeating the same substitute (falls back to it only if nothing else is valid).
   const used = new Set([newName]), laterTo = [];
