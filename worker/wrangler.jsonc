@@ -10,7 +10,7 @@
   // GEMINI_API_KEY is deliberately NOT here - it's set as a secret
   // (see worker/README.md), never written to this file.
   "vars": {
-    "GEMINI_MODEL": "gemini-3.6-flash",
+    "GEMINI_MODEL": "gemini-3.5-flash",
     "ALLOWED_ORIGIN": "https://kartikeya-autithya.github.io"
   },
 
