@@ -3269,7 +3269,10 @@ let savedRoutines = [];
 let savedRoutinesUid = null;      // which user savedRoutines belongs to
 let savedRoutinesState = "idle";  // idle | loading | ready | error
 let editingRoutineId = null;
+let savedRoutineBusy = false;      // true while a save/rename/delete request is in flight
+let savedRoutinesLoadSeq = 0;      // lets a newer load (or an account reset) cancel an older one
 function resetSavedRoutineState() {
+  savedRoutinesLoadSeq++;          // any load still in flight belongs to the previous account: ignore its result
   savedRoutines = [];
   savedRoutinesUid = null;
   savedRoutinesState = "idle";
@@ -3303,17 +3306,22 @@ function validRoutineName(raw){
 }
 
 async function loadSavedRoutines(){
+  const seq = ++savedRoutinesLoadSeq;
   if(!authUser){ savedRoutines = []; savedRoutinesUid = null; savedRoutinesState = "idle"; renderSavedRoutines(); return; }
   const uid = authUser.id;
   savedRoutinesState = "loading"; renderSavedRoutines();
   try {
-    const { data, error } = await sb.from("custom_routines").select("id,name,steps,created_at,updated_at").eq("user_id", uid).order("created_at", { ascending:true });
-    if(!authUser || authUser.id !== uid) return;   // logged out / switched while loading
-    if(error) throw error;
-    savedRoutines = data || []; savedRoutinesUid = uid; savedRoutinesState = "ready";
+    const query = sb.from("custom_routines").select("id,name,steps,created_at,updated_at").eq("user_id", uid).order("created_at", { ascending:true });
+    const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error("custom_routines load timed out")), 12000));
+    const { data, error } = await Promise.race([query, timeout]);
+    if(seq !== savedRoutinesLoadSeq) return;            // a newer load or an account reset took over and will render
+    if(!authUser || authUser.id !== uid){ savedRoutines = []; savedRoutinesUid = null; savedRoutinesState = "idle"; }
+    else if(error) throw error;
+    else { savedRoutines = data || []; savedRoutinesUid = uid; savedRoutinesState = "ready"; }
   } catch(e){
-    console.error("loadSavedRoutines", e);
-    if(authUser && authUser.id === uid){ savedRoutines = []; savedRoutinesUid = uid; savedRoutinesState = "error"; }
+    if(seq !== savedRoutinesLoadSeq) return;
+    console.error("loadSavedRoutines failed:", e);
+    savedRoutines = []; savedRoutinesUid = authUser ? authUser.id : null; savedRoutinesState = "error";
   }
   renderSavedRoutines();
 }
