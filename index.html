@@ -622,6 +622,11 @@
         <div class="title">Personal Workout Routine</div>
         <div class="desc">Tell us about you, then build and order your own routine</div>
       </div>
+      <div class="home-card" tabindex="0" role="button" onclick="playSound('personalisedWorkout'); openSavedRoutines()">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg></span>
+        <div class="title">My Saved Routines</div>
+        <div class="desc">Start, edit, rename or delete the routines you saved (up to 3)</div>
+      </div>
       <div class="home-card" tabindex="0" role="button" onclick="playSound('doAnyExercise'); showFreeExercise()">
         <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="2.2"/><path d="M12 8v7M7 11l5-3 5 3M9 21l3-6 3 6"/></svg></span>
         <div class="title">Free Exercise</div>
@@ -897,9 +902,11 @@
   <!-- SCREEN: PERSONAL BUILDER -->
   <div id="build-screen" class="screen">
     <div class="card">
-      <button class="back-link" onclick="goToScreen('intake')">← Back</button>
+      <button class="back-link" onclick="goToScreen(builderBackTarget)">← Back</button>
       <h2>Build your routine</h2>
       <div class="hint" style="margin-bottom:14px;">Click items to add them to your routine, in the order you want to do them.</div>
+      <div class="section-label">Saved routines <span id="saved-routines-counter" style="text-transform:none;letter-spacing:0;"></span></div>
+      <div id="saved-routines-list" class="pose-list"></div>
       <div class="section-label">Recommended for you</div>
       <div id="recommended-list" class="pose-list"></div>
       <div id="excluded-list" class="excluded-list"></div>
@@ -913,8 +920,12 @@
 
       <div class="section-label" style="margin-top:24px;">Your routine (in order)</div>
       <div id="my-routine-list" class="pose-list"></div>
+      <div class="section-label" id="routine-edit-label" style="display:none;"></div>
+      <input type="text" id="routine-name-input" maxlength="60" placeholder="Routine name (e.g. Morning stretch)" aria-label="Routine name" style="width:100%;margin-top:10px;padding:10px;border-radius:8px;border:1px solid var(--ya-line,#2a3a33);background:#141d19;color:var(--text);">
       <div class="nav-row">
         <button class="btn-primary" id="start-routine-btn" onclick="startCustomRoutine()" disabled>Start My Routine</button>
+        <button class="btn-secondary" id="save-routine-btn" onclick="saveCurrentRoutine()">Save routine</button>
+        <button class="btn-secondary" id="cancel-edit-btn" onclick="cancelRoutineEdit()" style="display:none;">Cancel edit</button>
       </div>
     </div>
   </div>
@@ -1691,6 +1702,7 @@ window.doUpdatePassword = async function(){
 window.doLogout = async function(){
   try { await sb.auth.signOut(); } catch(e) {}
   authUser = null; authProfile = null;
+  resetSavedRoutineState();
   resetUserData();
   renderAuthHeader();
   goToScreen("home");
@@ -1734,8 +1746,16 @@ window.showAccountScreen = async function(){
 
   try {
     sb.auth.onAuthStateChange(async (event, session) => {
-      if (event === "PASSWORD_RECOVERY") { showAuthScreen("recovery"); return; }
-      authUser = session ? session.user : null;
+  if (event === "PASSWORD_RECOVERY") { showAuthScreen("recovery"); return; }
+
+  const nextUserId = session ? session.user.id : null;
+  const previousUserId = authUser ? authUser.id : null;
+
+  if (nextUserId !== previousUserId) {
+    resetSavedRoutineState();
+  }
+
+  authUser = session ? session.user : null;
       if (authUser) await loadProfile(); else { authProfile = null; resetUserData(); }
       renderAuthHeader();
       if (authUser) setTimeout(()=>loadUserData(), 0);
@@ -3154,6 +3174,7 @@ LEVEL_ORDER.forEach((lvl,i)=>{
 
 let currentRecommended=[], currentExcluded=[];
 let myRoutine = [];
+let builderBackTarget = "intake";   // "home" when the builder was opened from My Saved Routines
 
 window.submitIntake = function(){
   const issues = Array.from(issuesGrid.querySelectorAll("input:checked")).map(i=>i.value);
@@ -3161,6 +3182,19 @@ window.submitIntake = function(){
   const {recommended, excluded} = recommendPoses(level, issues);
   currentRecommended = recommended; currentExcluded = excluded;
   myRoutine = [];
+  editingRoutineId = null; document.getElementById("routine-name-input").value = "";
+  builderBackTarget = "intake";
+  renderBuildScreen();
+  goToScreen("build");
+};
+
+// Home shortcut: open the builder (with the saved-routines panel) without filling in the intake form.
+window.openSavedRoutines = function(){
+  if(!authUser){ toast("Log in to use saved routines."); return; }
+  const {recommended, excluded} = recommendPoses(LEVEL_ORDER[0], []);
+  currentRecommended = recommended; currentExcluded = excluded;
+  myRoutine = []; editingRoutineId = null; document.getElementById("routine-name-input").value = "";
+  builderBackTarget = "home";
   renderBuildScreen();
   goToScreen("build");
 };
@@ -3195,6 +3229,7 @@ function renderBuildScreen(){
     allCounters.appendChild(btn);
   });
   renderMyRoutine();
+  loadSavedRoutines();
 }
 window.toggleAllPoses = function(){ const w=document.getElementById("all-poses-wrap"); w.style.display=w.style.display==="none"?"block":"none"; };
 
@@ -3217,9 +3252,192 @@ function renderMyRoutine(){
 }
 function moveItem(i,dir){ const j=i+dir; if(j<0||j>=myRoutine.length)return; [myRoutine[i],myRoutine[j]]=[myRoutine[j],myRoutine[i]]; renderMyRoutine(); }
 function removeItem(i){ myRoutine.splice(i,1); renderMyRoutine(); }
+function stepsFromNames(names){
+  return names.map(name => ALL_COUNTERS.includes(name) ? counterStep(name,10) : holdStep(name,15));
+}
 window.startCustomRoutine = function(){
-  const steps = myRoutine.map(name => ALL_COUNTERS.includes(name) ? counterStep(name,10) : holdStep(name,15));
-  startSequence("My Routine", steps);
+  startSequence("My Routine", stepsFromNames(myRoutine));
+};
+
+// ============================================================
+// SAVED CUSTOM ROUTINES (Phase 1) - table public.custom_routines
+// The 3-routine limit is enforced by a database trigger; the checks
+// here are only for friendly messages. RLS restricts rows to their owner.
+// ============================================================
+const MAX_SAVED_ROUTINES = 3;
+let savedRoutines = [];
+let savedRoutinesUid = null;      // which user savedRoutines belongs to
+let savedRoutinesState = "idle";  // idle | loading | ready | error
+let editingRoutineId = null;
+function resetSavedRoutineState() {
+  savedRoutines = [];
+  savedRoutinesUid = null;
+  savedRoutinesState = "idle";
+  editingRoutineId = null;
+  savedRoutineBusy = false;
+
+  const nameInput = document.getElementById("routine-name-input");
+  if (nameInput) nameInput.value = "";
+
+  renderSavedRoutines();
+}
+
+function savedRoutinesForUser(){ return (authUser && savedRoutinesUid === authUser.id) ? savedRoutines : []; }
+
+function routineErrorMessage(error){
+  const m = (error && (error.message || "")) + " " + (error && (error.details || ""));
+  if(m.includes("ROUTINE_LIMIT_REACHED")) return "You can save up to " + MAX_SAVED_ROUTINES + " routines. Delete one to save another.";
+  if(error && error.code === "23505") return "You already have a routine with that name.";
+  if(error && error.code === "23514") return "That routine isn't valid (name 1-60 characters, 1-40 steps).";
+  if(error && (error.code === "42501" || error.code === "PGRST301")) return "Please log in again to manage routines.";
+  return "Couldn't save your routine. Please try again.";
+}
+
+function validRoutineName(raw){
+  const name = (raw || "").trim().replace(/\s+/g, " ");
+  if(!name){ toast("Give your routine a name."); return null; }
+  if(name.length > 60){ toast("Routine names can be up to 60 characters."); return null; }
+  // A custom routine must not share a name with a preset routine (would be counted as that preset).
+  if(Object.keys(ROUTINES).some(k => k.toLowerCase() === name.toLowerCase())){ toast("That name is used by a built-in routine. Choose another."); return null; }
+  return name;
+}
+
+async function loadSavedRoutines(){
+  if(!authUser){ savedRoutines = []; savedRoutinesUid = null; savedRoutinesState = "idle"; renderSavedRoutines(); return; }
+  const uid = authUser.id;
+  savedRoutinesState = "loading"; renderSavedRoutines();
+  try {
+    const { data, error } = await sb.from("custom_routines").select("id,name,steps,created_at,updated_at").eq("user_id", uid).order("created_at", { ascending:true });
+    if(!authUser || authUser.id !== uid) return;   // logged out / switched while loading
+    if(error) throw error;
+    savedRoutines = data || []; savedRoutinesUid = uid; savedRoutinesState = "ready";
+  } catch(e){
+    console.error("loadSavedRoutines", e);
+    if(authUser && authUser.id === uid){ savedRoutines = []; savedRoutinesUid = uid; savedRoutinesState = "error"; }
+  }
+  renderSavedRoutines();
+}
+
+function renderSavedRoutines(){
+  const list = document.getElementById("saved-routines-list"), counter = document.getElementById("saved-routines-counter");
+  if(!list || !counter) return;
+  list.innerHTML = "";
+  const rows = savedRoutinesForUser();
+  counter.textContent = (authUser && savedRoutinesState === "ready") ? "- " + rows.length + " of " + MAX_SAVED_ROUTINES + " saved" : "";
+  const note = text => { const d = document.createElement("div"); d.className = "empty-state"; d.textContent = text; list.appendChild(d); };
+  if(!authUser){ note("Log in to save routines."); }
+  else if(savedRoutinesState === "loading" && !rows.length){ note("Loading your saved routines..."); }
+  else if(savedRoutinesState === "error"){
+    note("Couldn't load your saved routines.");
+    const b = document.createElement("button"); b.className = "btn-secondary"; b.textContent = "Retry"; b.onclick = loadSavedRoutines; list.appendChild(b);
+  }
+  else if(!rows.length){ note("No saved routines yet. Build one below and tap Save routine."); }
+  rows.forEach(r => {
+    const names = Array.isArray(r.steps) ? r.steps : [];
+    const row = document.createElement("div"); row.className = "pose-btn"; row.style.cursor = "default";
+    if(editingRoutineId === r.id) row.style.outline = "1px solid var(--accent,#6fcf97)";
+    const label = document.createElement("span"); label.textContent = r.name + " (" + names.length + " steps)";
+    const controls = document.createElement("span");
+    const mk = (text, cls, fn, ml) => { const b = document.createElement("button"); b.textContent = text; b.className = cls; b.style.padding = "4px 10px"; if(ml) b.style.marginLeft = "4px"; b.disabled = savedRoutineBusy; b.onclick = fn; controls.appendChild(b); };
+    mk("Start", "btn-primary", () => startSavedRoutine(r.id), false);
+    mk("Edit", "btn-secondary", () => editSavedRoutine(r.id), true);
+    mk("Rename", "btn-secondary", () => renameSavedRoutine(r.id), true);
+    mk("Delete", "btn-danger", () => deleteSavedRoutine(r.id), true);
+    row.appendChild(label); row.appendChild(controls); list.appendChild(row);
+  });
+  const edit = document.getElementById("routine-edit-label"), cancel = document.getElementById("cancel-edit-btn"), save = document.getElementById("save-routine-btn");
+  const cur = rows.find(r => r.id === editingRoutineId);
+  if(editingRoutineId && !cur) editingRoutineId = null;
+  edit.style.display = cur ? "block" : "none"; edit.textContent = cur ? "Editing: " + cur.name : "";
+  cancel.style.display = cur ? "inline-block" : "none";
+  save.textContent = cur ? "Update routine" : "Save routine";
+  save.disabled = savedRoutineBusy;
+}
+
+function knownStepNames(steps){
+  const all = Array.isArray(steps) ? steps : [];
+  const ok = all.filter(n => typeof n === "string" && (ALL_POSES.includes(n) || ALL_COUNTERS.includes(n)));
+  return { ok, dropped: all.length - ok.length };
+}
+
+window.saveCurrentRoutine = async function(){
+  if(savedRoutineBusy) return;
+  if(!authUser){ toast("Log in to save routines."); return; }
+  const name = validRoutineName(document.getElementById("routine-name-input").value);
+  if(!name) return;
+  if(!myRoutine.length){ toast("Add at least one step first."); return; }
+  const rows = savedRoutinesForUser();
+  if(!editingRoutineId && rows.length >= MAX_SAVED_ROUTINES){ toast("You can save up to " + MAX_SAVED_ROUTINES + " routines. Delete one to save another."); return; }
+  savedRoutineBusy = true; renderSavedRoutines();
+  try {
+    const steps = myRoutine.slice();
+    const q = editingRoutineId
+      ? sb.from("custom_routines").update({ name, steps }).eq("id", editingRoutineId).eq("user_id", authUser.id).select().single()
+      : sb.from("custom_routines").insert({ user_id: authUser.id, name, steps }).select().single();
+    const { error } = await q;
+    if(error) throw error;
+    const wasEdit = !!editingRoutineId;
+    editingRoutineId = null; document.getElementById("routine-name-input").value = "";
+    toast(wasEdit ? "Routine updated." : "Routine saved.");
+  } catch(e){
+    console.error("saveCurrentRoutine", e); toast(routineErrorMessage(e));
+  } finally {
+    savedRoutineBusy = false;
+    await loadSavedRoutines();   // always re-sync with the database (it is the source of truth)
+  }
+};
+
+window.startSavedRoutine = function(id){
+  const r = savedRoutinesForUser().find(x => x.id === id); if(!r) return;
+  const { ok, dropped } = knownStepNames(r.steps);
+  if(!ok.length){ toast("This routine has no steps that are available any more."); return; }
+  if(dropped) toast(dropped + " unavailable step(s) were skipped.");
+  startSequence(r.name, stepsFromNames(ok), { sessionType:"custom_routine" });
+};
+
+window.editSavedRoutine = function(id){
+  const r = savedRoutinesForUser().find(x => x.id === id); if(!r) return;
+  const { ok, dropped } = knownStepNames(r.steps);
+  myRoutine = ok.slice(); editingRoutineId = r.id;
+  document.getElementById("routine-name-input").value = r.name;
+  renderMyRoutine(); renderSavedRoutines();
+  if(dropped) toast(dropped + " unavailable step(s) were removed from the editor.");
+  document.getElementById("my-routine-list").scrollIntoView({ behavior:"smooth", block:"center" });
+};
+
+window.cancelRoutineEdit = function(){
+  editingRoutineId = null; myRoutine = []; document.getElementById("routine-name-input").value = "";
+  renderMyRoutine(); renderSavedRoutines();
+};
+
+window.renameSavedRoutine = async function(id){
+  if(savedRoutineBusy || !authUser) return;
+  const r = savedRoutinesForUser().find(x => x.id === id); if(!r) return;
+  const input = window.prompt("New name for this routine:", r.name);
+  if(input === null) return;
+  const name = validRoutineName(input); if(!name || name === r.name) return;
+  savedRoutineBusy = true; renderSavedRoutines();
+  try {
+    const { error } = await sb.from("custom_routines").update({ name }).eq("id", id).eq("user_id", authUser.id);
+    if(error) throw error;
+    if(editingRoutineId === id) document.getElementById("routine-name-input").value = name;
+    toast("Routine renamed.");
+  } catch(e){ console.error("renameSavedRoutine", e); toast(routineErrorMessage(e)); }
+  finally { savedRoutineBusy = false; await loadSavedRoutines(); }
+};
+
+window.deleteSavedRoutine = async function(id){
+  if(savedRoutineBusy || !authUser) return;
+  const r = savedRoutinesForUser().find(x => x.id === id); if(!r) return;
+  if(!window.confirm('Delete "' + r.name + '"? This cannot be undone.')) return;
+  savedRoutineBusy = true; renderSavedRoutines();
+  try {
+    const { error } = await sb.from("custom_routines").delete().eq("id", id).eq("user_id", authUser.id);
+    if(error) throw error;
+    if(editingRoutineId === id){ editingRoutineId = null; document.getElementById("routine-name-input").value = ""; }
+    toast("Routine deleted.");
+  } catch(e){ console.error("deleteSavedRoutine", e); toast("Couldn't delete the routine. Please try again."); }
+  finally { savedRoutineBusy = false; await loadSavedRoutines(); }
 };
 
 // ============================================================
