@@ -905,6 +905,14 @@
       <button class="back-link" onclick="goToScreen(builderBackTarget)">← Back</button>
       <h2>Build your routine</h2>
       <div class="hint" style="margin-bottom:14px;">Click items to add them to your routine, in the order you want to do them.</div>
+      <div class="section-label">Suggest a routine</div>
+      <div class="hint">Pick a length and focus. Suggestions only use exercises that fit your level, pain areas and avoided list.</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin:8px 0;">
+        <select class="select-input" id="rs-minutes" aria-label="Routine length" style="flex:1;min-width:120px;"></select>
+        <select class="select-input" id="rs-goal" aria-label="Routine focus" style="flex:1;min-width:140px;"></select>
+        <button class="btn-secondary" id="rs-btn" onclick="suggestRoutine()">Suggest</button>
+      </div>
+      <div id="rs-result" style="margin-bottom:14px;"></div>
       <div class="section-label">Saved routines <span id="saved-routines-counter" style="text-transform:none;letter-spacing:0;"></span></div>
       <div id="saved-routines-list" class="pose-list"></div>
       <div class="section-label">Recommended for you</div>
@@ -3602,6 +3610,7 @@ function renderBuildScreen(){
   });
   renderMyRoutine();
   loadSavedRoutines();
+  renderRoutineSuggest();
 }
 window.toggleAllPoses = function(){ const w=document.getElementById("all-poses-wrap"); w.style.display=w.style.display==="none"?"block":"none"; };
 
@@ -3643,7 +3652,14 @@ let savedRoutinesState = "idle";  // idle | loading | ready | error
 let editingRoutineId = null;
 let savedRoutineBusy = false;      // true while a save/rename/delete request is in flight
 let savedRoutinesLoadSeq = 0;      // lets a newer load (or an account reset) cancel an older one
+// Phase 3: state of the Build screen's "Suggest a routine" panel (declared here so resetSavedRoutineState can reset it safely).
+let routineSuggest = { busy:false, seq:0, result:null, error:"", minutesTouched:false };
+function routineSuggestReset(){
+  routineSuggest.seq++; routineSuggest.busy = false; routineSuggest.result = null; routineSuggest.error = ""; routineSuggest.minutesTouched = false;
+  renderRoutineSuggest();
+}
 function resetSavedRoutineState() {
+  routineSuggestReset();           // a suggestion made for the previous account must never be shown or used
   savedRoutinesLoadSeq++;          // any load still in flight belongs to the previous account: ignore its result
   savedRoutines = [];
   savedRoutinesUid = null;
@@ -4670,7 +4686,7 @@ Object.assign(UI, {
 // Gemini is never called from the camera loop (no per-frame / per-rep / per-hold calls).
 // ============================================================
 const AI_ENABLED = true;
-let AI_TIMEOUTS = { plan:12000, insight:10000, pain:3000 };   // ms
+let AI_TIMEOUTS = { plan:12000, insight:10000, pain:3000, routine:12000 };   // ms
 let AI_DEBOUNCE_MS = 1200;                                    // wait for UI to settle before asking for a plan
 let aiCooldownUntil = 0;                                      // set after a 429 so we don't hammer the Worker
 
@@ -4803,6 +4819,147 @@ async function chooseAlternative(current, avoidedSet, routineSet){
   }
   return { name, pool:[name, ...list.filter(n=>n !== name)], source };
 }
+
+// ---------- Phase 3: AI routine suggestion (Build screen) ----------
+// Gemini may only choose ids from a candidate list the app built from the user's own safety filters
+// (level, pain areas, avoided list). Every reply goes through validateAiPlan (+ the checks below);
+// anything unexpected falls back to the deterministic plan. Nothing is saved until the user presses Save.
+/*P3-PURE-START*/
+const MAX_ROUTINE_STEPS = 40;   // same limit the database enforces on custom_routines.steps
+// What stepsFromNames()/the runner really use: 15 s holds and 10 reps (~3 s each), plus the usual per-exercise overhead.
+function routineStepSeconds(name){ return (ALL_COUNTERS.includes(name) ? 30 : 15) + SEC_OVERHEAD; }
+function routineEstimateMinutes(names){ return Math.max(1, Math.round(names.reduce((t, n)=>t + routineStepSeconds(n), 0) / 60)); }
+function routineLabel(goal, minutes){ const g = goal ? goal.charAt(0).toUpperCase() + goal.slice(1) : "Custom"; return (g + " " + minutes + " min").slice(0, 60); }
+function buildRoutineSuggestRequest(inp, cands, minutes, goal){
+  const req = buildAiPlanRequest(inp, cands);
+  const focus = goal ? "focused on " + goal : "matching the user's goals";
+  req.message = req.message.replace("Build today's yoga practice for this user.",
+    "Build ONE reusable yoga routine of about " + minutes + " minutes " + focus + " for this user.");
+  return req;
+}
+function validateRoutineSuggestion(parsed, inp, cands){
+  const v = validateAiPlan(parsed, inp, cands);
+  if(!v.ok) return v;
+  if(v.units.flat().length > MAX_ROUTINE_STEPS) return { ok:false, reason:"too-many-steps" };
+  return v;
+}
+/*P3-PURE-END*/
+
+function routineSuggestOpts(minutes, goal){
+  const p = authProfile || {};
+  // The builder's runner uses fixed 15 s holds and 10 reps, so size the routine with those, not the profile's settings.
+  const profile = Object.assign({}, p, { asana_hold_time:15, exercise_rep_limit:10 });
+  return { profile, avoidedSet:new Set(p.avoided_exercises || []), favs:new Set(favoriteExerciseNames()), sessions:userData.sessions, minutes, goal:goal || null };
+}
+async function buildRoutineSuggestion(minutes, goal){
+  const opts = routineSuggestOpts(minutes, goal);
+  const inp = preparePlanInputs(opts);
+  const rules = buildPracticePlan(opts);                                       // instant, deterministic, always computed
+  const rulesNames = (rules.names || []).slice(0, rules.passCount || 0).slice(0, MAX_ROUTINE_STEPS);   // one pass, no repeated rounds
+  let names = rulesNames, source = "rules", why = rules.why || {};
+  const cands = buildAiCandidates(inp);
+  if(AI_ENABLED && cands.length >= 3 && rulesNames.length){
+    const req = buildRoutineSuggestRequest(inp, cands, minutes, goal);
+    const parsed = await callCoachJSON("routine", req.message, req.context);
+    const v = validateRoutineSuggestion(parsed, inp, cands);
+    if(v.ok){
+      const plan = assemblePlan(inp, v.units, "ai", v.codes);
+      const aiNames = plan.names.slice(0, plan.passCount);
+      const secOf = list => list.reduce((t, n)=>t + routineStepSeconds(n), 0);
+      // Never accept an AI routine that is clearly shorter than what the rules would have built.
+      if(aiNames.length >= 3 && secOf(aiNames) >= 0.75 * secOf(rulesNames)){ names = aiNames; source = "ai"; why = plan.why || {}; }
+    } else console.debug("[ai-routine] using rules-based routine:", parsed ? v.reason : "no usable response");
+  }
+  if(!names.length) return { ok:false, message: rules.reason || "Your level, pain areas and avoided list leave too few exercises to build a routine." };
+  // Final independent check against the library and the user's safety filters - nothing earlier is trusted.
+  const bad = names.find(n => !(ALL_POSES.includes(n) || ALL_COUNTERS.includes(n)) || !isEligible(n, inp.ex));
+  if(bad) return { ok:false, message:"Couldn't build a safe routine right now. Please try again." };
+  return { ok:true, names, source, why, minutes:routineEstimateMinutes(names), skipped:inp.safetySkipped };
+}
+
+window.suggestRoutine = async function(){
+  const st = routineSuggest;
+  if(st.busy) return;
+  if(!authUser){ toast("Log in to get suggestions tailored to you."); return; }
+  if(p2IsOffline()){ toast("Suggestions need an internet connection."); renderRoutineSuggest(); return; }
+  const minutes = parseInt(document.getElementById("rs-minutes").value, 10);
+  const goal = document.getElementById("rs-goal").value || null;
+  if(!SESSION_DURATIONS.includes(minutes)){ toast("Pick a length first."); return; }
+  const uid = authUser.id, seq = ++st.seq;
+  st.busy = true; st.result = null; st.error = ""; renderRoutineSuggest();
+  let out;
+  try { out = await buildRoutineSuggestion(minutes, goal); }
+  catch(e){ console.warn("Routine suggestion failed", e); out = { ok:false, message:"Couldn't build a suggestion. Please try again." }; }
+  if(seq !== st.seq) return;                       // account changed or state was reset while waiting
+  st.busy = false;
+  if(!authUser || authUser.id !== uid){ renderRoutineSuggest(); return; }
+  if(out.ok) st.result = Object.assign({ uid, goal, label:routineLabel(goal, minutes) }, out); else st.error = out.message;
+  renderRoutineSuggest();
+};
+
+function dismissRoutineSuggest(){ routineSuggest.result = null; routineSuggest.error = ""; renderRoutineSuggest(); }
+
+function useSuggestedRoutine(){
+  const r = routineSuggest.result;
+  if(!r || !authUser || r.uid !== authUser.id) return;
+  if(myRoutine.length && !window.confirm("Replace the steps in your routine with this suggestion?")) return;
+  // Re-check against the CURRENT safety filters (the profile may have changed since the suggestion was made).
+  const ex = exclusionSets(authProfile || {}, new Set((authProfile && authProfile.avoided_exercises) || []));
+  const names = r.names.filter(n => (ALL_POSES.includes(n) || ALL_COUNTERS.includes(n)) && isEligible(n, ex)).slice(0, MAX_ROUTINE_STEPS);
+  if(!names.length){ toast("That suggestion isn't available any more."); return; }
+  myRoutine = names;
+  const nameInput = document.getElementById("routine-name-input");
+  if(nameInput && !nameInput.value.trim() && !editingRoutineId) nameInput.value = r.label;
+  renderMyRoutine();
+  toast("Added to your routine. Edit it, then Start or Save.");
+  const list = document.getElementById("my-routine-list");
+  if(list && list.scrollIntoView) list.scrollIntoView({ behavior:"smooth", block:"center" });
+}
+
+function renderRoutineSuggest(){
+  const box = document.getElementById("rs-result"); if(!box) return;
+  const st = routineSuggest, offline = p2IsOffline();
+  const btn = document.getElementById("rs-btn");
+  if(btn){ btn.disabled = st.busy || !authUser || offline; btn.textContent = st.busy ? "Thinking..." : "Suggest"; }
+  const sel = document.getElementById("rs-minutes");
+  if(sel && !st.minutesTouched) sel.value = String((authProfile && authProfile.session_duration) || 15);
+  box.textContent = "";
+  const note = text => { const d = document.createElement("div"); d.className = "hint"; d.textContent = text; box.appendChild(d); };
+  if(!authUser){ note("Log in to get suggestions tailored to your profile."); return; }
+  if(offline){ note("Suggestions need an internet connection."); return; }
+  if(st.busy){ note("Putting a routine together..."); return; }
+  if(st.error){ note(st.error); return; }
+  const r = (st.result && st.result.uid === authUser.id) ? st.result : null;
+  if(!r){ if(!hasPersonalization(authProfile)) note("Tip: set your level, goals and pain areas in your profile for better suggestions."); return; }
+  note("About " + r.minutes + " min, " + r.names.length + " steps - " +
+    (r.source === "ai" ? "tuned by AI from exercises that passed your safety filters." : "chosen by the app's rules (AI wasn't used)."));
+  r.names.forEach((n, i) => {
+    const row = document.createElement("div"); row.className = "pose-btn"; row.style.cursor = "default";
+    const label = document.createElement("span"); label.textContent = (i + 1) + ". " + n;
+    const tag = document.createElement("span"); tag.className = "tag"; tag.textContent = (r.why && r.why[n] && r.why[n][0]) || "";
+    row.appendChild(label); row.appendChild(tag); box.appendChild(row);
+  });
+  if(r.skipped) note("Skipped " + r.skipped + " exercise" + (r.skipped === 1 ? "" : "s") + " from your pain areas and avoided list.");
+  const nav = document.createElement("div"); nav.className = "nav-row";
+  const use = document.createElement("button"); use.className = "btn-primary"; use.textContent = "Use this routine"; use.onclick = useSuggestedRoutine;
+  const no = document.createElement("button"); no.className = "btn-secondary"; no.textContent = "Dismiss"; no.onclick = dismissRoutineSuggest;
+  nav.appendChild(use); nav.appendChild(no); box.appendChild(nav);
+}
+
+(function initRoutineSuggestUi(){
+  try {
+    buildSelect("rs-minutes", SESSION_DURATIONS, "min");
+    const g = document.getElementById("rs-goal");
+    if(g){
+      const any = document.createElement("option"); any.value = ""; any.textContent = "My goals"; g.appendChild(any);
+      GOALS_LIST.filter(x => x !== "Other").forEach(x => { const o = document.createElement("option"); o.value = x.toLowerCase(); o.textContent = x; g.appendChild(o); });
+    }
+    const m = document.getElementById("rs-minutes");
+    if(m) m.addEventListener("change", () => { routineSuggest.minutesTouched = true; });
+    window.addEventListener("online", renderRoutineSuggest);
+    window.addEventListener("offline", renderRoutineSuggest);
+  } catch(e){ console.warn("Routine suggestion UI could not start", e); }
+})();
 
 // ---------- post-session insight ----------
 function buildInsightFacts(saved, result, prev){
