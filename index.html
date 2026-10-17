@@ -1095,7 +1095,7 @@ import { PoseLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
 // Loaded via esm.sh, not jsDelivr's "+esm" transform - jsDelivr's ESM
 // build of supabase-js has a known runtime bug (broken nested default
 // imports) as of late 2025; esm.sh doesn't have this problem.
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.108.1";
 
 // ============================================================
 // SUPABASE AUTH - real user accounts (signup/login/logout/session
@@ -1133,6 +1133,344 @@ function newUserData(){
 let userData = newUserData();   // cached per-login: sessions (newest first), favorites, achievements
 let rec = null;                 // active session recorder (null when no practice is running)
 let lastSummary = null;         // what the end-of-session screen is showing
+
+// ===== PHASE 2 OFFLINE: BEGIN =====
+// Offline support. Two IndexedDB stores:
+//   "outbox" - writes waiting to reach Supabase (sessions, favorites). Kept per user,
+//              flushed only while that same user is logged in.
+//   "cache"  - last-known read data (sessions/favorites/achievements, profile, saved
+//              routines), per user, wiped on logout.
+// If IndexedDB is unavailable every helper reports failure and the app behaves exactly
+// as it did before Phase 2 (online only). Session rows use their own uuid (practice_sessions.id)
+// as the idempotency key: a retry that hits the primary key (23505) counts as already saved.
+let p2DbPromise = null;
+let p2Syncing = false;
+let p2RetryTimer = null;
+let p2RetryDelay = 0;
+let p2PendingCount = 0;
+let p2FailedCount = 0;
+let p2ProvisionalAuth = false;   // true while the identity came from localStorage because supabase-js had no session offline
+
+function p2Uuid(){
+  if(window.crypto && typeof window.crypto.randomUUID === "function") return window.crypto.randomUUID();
+  const b = new Uint8Array(16); window.crypto.getRandomValues(b);
+  b[6] = (b[6] & 0x0f) | 0x40; b[8] = (b[8] & 0x3f) | 0x80;
+  const h = Array.from(b, x => x.toString(16).padStart(2, "0")).join("");
+  return h.slice(0, 8) + "-" + h.slice(8, 12) + "-" + h.slice(12, 16) + "-" + h.slice(16, 20) + "-" + h.slice(20);
+}
+
+function p2Open(){
+  if(p2DbPromise) return p2DbPromise;
+  p2DbPromise = new Promise(resolve => {
+    try {
+      if(!window.indexedDB){ resolve(null); return; }
+      const req = window.indexedDB.open("yogai-offline", 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if(!db.objectStoreNames.contains("outbox")) db.createObjectStore("outbox", { keyPath:"id" });
+        if(!db.objectStoreNames.contains("cache")) db.createObjectStore("cache", { keyPath:"k" });
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => resolve(null);
+      req.onblocked = () => resolve(null);
+    } catch(e){ resolve(null); }
+  });
+  return p2DbPromise;
+}
+// Runs one request in its own transaction. Resolves { ok, value }; never rejects.
+async function p2Run(store, mode, fn){
+  const db = await p2Open();
+  if(!db) return { ok:false };
+  return new Promise(resolve => {
+    try {
+      const tx = db.transaction(store, mode);
+      const req = fn(tx.objectStore(store));
+      let value;
+      if(req) req.onsuccess = () => { value = req.result; };
+      tx.oncomplete = () => resolve({ ok:true, value });
+      tx.onerror = () => resolve({ ok:false });
+      tx.onabort = () => resolve({ ok:false });
+    } catch(e){ resolve({ ok:false }); }
+  });
+}
+function p2Put(store, val){ return p2Run(store, "readwrite", s => s.put(val)).then(r => r.ok); }
+function p2Del(store, key){ return p2Run(store, "readwrite", s => s.delete(key)).then(r => r.ok); }
+function p2Clear(store){ return p2Run(store, "readwrite", s => s.clear()).then(r => r.ok); }
+async function p2All(store){ const r = await p2Run(store, "readonly", s => s.getAll()); return r.ok ? (r.value || []) : []; }
+async function p2GetOne(store, key){ const r = await p2Run(store, "readonly", s => s.get(key)); return r.ok ? (r.value || null) : null; }
+async function p2CacheGet(uid, name){ const r = await p2GetOne("cache", uid + ":" + name); return r ? r.v : null; }
+function p2CacheSet(uid, name, v){ return p2Put("cache", { k: uid + ":" + name, v, saved: Date.now() }); }
+async function p2PurgeCacheExcept(uid){
+  const all = await p2All("cache");
+  for(const r of all){ if(!String(r.k).startsWith(uid + ":")) await p2Del("cache", r.k); }
+}
+
+function p2IsOffline(){ return typeof navigator !== "undefined" && navigator.onLine === false; }
+function p2IsNetworkError(err){
+  if(p2IsOffline()) return true;
+  if(!err) return false;
+  const m = String((err && err.message) || err).toLowerCase();
+  return err.name === "AuthRetryableFetchError" || err.name === "p2Timeout" ||
+    /failed to fetch|networkerror|network request failed|load failed|fetch failed|timed out|network error/.test(m);
+}
+function p2WithTimeout(promise, ms){
+  let t;
+  const to = new Promise((_, rej) => { t = setTimeout(() => { const e = new Error("Request timed out"); e.name = "p2Timeout"; rej(e); }, ms); });
+  return Promise.race([promise, to]).finally(() => clearTimeout(t));
+}
+// ok | dup (already on the server) | retry (try again later) | auth (needs a valid login) | fatal (server rejected it)
+function p2Classify(res){
+  const err = res && res.error;
+  if(!err) return { kind:"ok", data: res ? res.data : null };
+  const code = String(err.code || ""), status = Number(res.status) || 0;
+  if(code === "23505") return { kind:"dup", error:err };
+  if(p2IsNetworkError(err) || (status === 0 && !code) || status >= 500 || status === 408 || status === 429) return { kind:"retry", error:err };
+  if(code === "42501" || code === "PGRST301" || code === "PGRST303" || status === 401 || status === 403) return { kind:"auth", error:err };
+  return { kind:"fatal", error:err };
+}
+
+// ---------- sessions ----------
+async function p2InsertSession(uid, row){
+  try {
+    const res = await p2WithTimeout(sb.from("practice_sessions").insert({ ...row, user_id: uid }).select().single(), 20000);
+    return p2Classify(res);
+  } catch(e){ return { kind: p2IsNetworkError(e) ? "retry" : "fatal", error:e }; }
+}
+function p2SortSessions(){ userData.sessions.sort((a, b) => new Date(b.completed_at) - new Date(a.completed_at)); }
+function p2AddPendingLocal(uid, row){
+  if(userData.uid !== uid || userData.sessions.some(s => s.id === row.id)) return;
+  userData.sessions.unshift(Object.assign({}, row, { user_id: uid, created_at: row.completed_at, _pending:true }));
+  p2SortSessions(); todayPlanCache = null;
+}
+// A row reached the server (or already was there): replace/insert the local copy and drop the pending flag.
+function p2SyncedLocal(uid, row, data){
+  if(userData.uid !== uid) return;
+  const i = userData.sessions.findIndex(s => s.id === row.id);
+  const fresh = data || Object.assign({}, i >= 0 ? userData.sessions[i] : row, { user_id: uid });
+  delete fresh._pending;
+  if(i >= 0) userData.sessions[i] = fresh; else userData.sessions.unshift(fresh);
+  todayPlanCache = null;
+}
+async function p2QueueSession(uid, row){
+  const ok = await p2Put("outbox", { id: row.id, uid, kind:"session", row, ts: Date.now(), state:"pending" });
+  if(ok){ p2AddPendingLocal(uid, row); await p2Recount(); }
+  return ok;
+}
+
+// ---------- favorites ----------
+function p2FavId(uid, kind, key){ return "fav:" + uid + ":" + kind + ":" + key; }
+function p2QueueFav(uid, op, fav){ return p2Put("outbox", { id: p2FavId(uid, fav.kind, fav.item_key), uid, kind:"fav", op, fav, ts: Date.now(), state:"pending" }); }
+async function p2ApplyFav(uid, e){
+  try {
+    const f = e.fav;
+    const res = e.op === "remove"
+      ? await p2WithTimeout(sb.from("favorites").delete().eq("user_id", uid).eq("kind", f.kind).eq("item_key", f.item_key), 20000)
+      : await p2WithTimeout(sb.from("favorites").upsert({ user_id: uid, kind:f.kind, item_key:f.item_key, item_name:f.item_name }, { onConflict:"user_id,kind,item_key", ignoreDuplicates:true }), 20000);
+    return p2Classify(res);
+  } catch(err){ return { kind: p2IsNetworkError(err) ? "retry" : "fatal", error:err }; }
+}
+
+// ---------- merging queued work into what the screens show ----------
+async function p2ApplyOutbox(uid){
+  const items = (await p2All("outbox")).filter(e => e.uid === uid && e.state !== "failed");
+  if(!authUser || authUser.id !== uid || userData.uid !== uid) return;
+  const have = new Set(userData.sessions.map(s => s.id));
+  let added = false;
+  for(const e of items){
+    if(e.kind === "session" && e.row && !have.has(e.row.id)){
+      userData.sessions.push(Object.assign({}, e.row, { user_id: uid, created_at: e.row.completed_at, _pending:true }));
+      have.add(e.row.id); added = true;
+    } else if(e.kind === "fav" && e.fav){
+      const id = e.fav.kind + ":" + e.fav.item_key;
+      if(e.op === "remove"){
+        userData.favorites.delete(id);
+        userData.favoriteRows = userData.favoriteRows.filter(r => !(r.kind === e.fav.kind && r.item_key === e.fav.item_key));
+      } else if(!userData.favorites.has(id)){
+        userData.favorites.add(id);
+        userData.favoriteRows.push({ kind:e.fav.kind, item_key:e.fav.item_key, item_name:e.fav.item_name });
+      }
+    }
+  }
+  if(added) p2SortSessions();
+}
+function p2SaveSnapshot(uid){
+  if(userData.uid !== uid || !userData.available) return;
+  p2CacheSet(uid, "data", {
+    sessions: userData.sessions.filter(s => !s._pending),
+    favoriteRows: userData.favoriteRows.slice(),
+    achievements: Array.from(userData.achievements.entries())
+  });
+}
+async function p2FallbackToSnapshot(uid){
+  const d = await p2CacheGet(uid, "data");
+  if(!d || !Array.isArray(d.sessions)) return false;
+  if(!authUser || authUser.id !== uid || userData.uid !== uid) return false;
+  userData.sessions = d.sessions;
+  userData.favoriteRows = d.favoriteRows || [];
+  userData.favorites = new Set(userData.favoriteRows.map(r => r.kind + ":" + r.item_key));
+  userData.achievements = new Map(d.achievements || []);
+  return true;
+}
+
+// ---------- sync ----------
+async function p2Recount(){
+  let p = 0, f = 0;
+  if(authUser){
+    const uid = authUser.id;
+    (await p2All("outbox")).forEach(e => { if(e.uid === uid){ if(e.state === "failed") f++; else p++; } });
+  }
+  p2PendingCount = p; p2FailedCount = f;
+  p2RenderStatus();
+}
+async function p2StillQueued(e){
+  const cur = await p2GetOne("outbox", e.id);
+  return !!cur && cur.ts === e.ts && cur.state !== "failed";
+}
+async function p2Flush(manual){
+  if(p2Syncing || !authUser || p2IsOffline()) return;
+  if(userData.loading){ setTimeout(() => p2Flush(manual), 500); return; }   // never race a data reload
+  const uid = authUser.id;
+  p2Syncing = true; clearTimeout(p2RetryTimer); p2RetryTimer = null; p2RenderStatus();
+  let blocked = false, didSession = false, didAny = false;
+  try {
+    for(let pass = 0; pass < 3 && !blocked; pass++){
+      let items = (await p2All("outbox")).filter(e => e.uid === uid).sort((a, b) => a.ts - b.ts);
+      if(manual && pass === 0){
+        for(const e of items){ if(e.state === "failed"){ e.state = "pending"; await p2Put("outbox", e); } }
+      }
+      items = items.filter(e => e.state !== "failed");
+      if(!items.length) break;
+      for(const e of items){
+        if(!authUser || authUser.id !== uid){ blocked = true; break; }
+        let out;
+        if(e.kind === "session" && e.row) out = await p2InsertSession(uid, e.row);
+        else if(e.kind === "fav" && e.fav){
+          if(!(await p2StillQueued(e))) continue;   // replaced or removed meanwhile (a newer choice wins)
+          out = await p2ApplyFav(uid, e);
+        } else out = { kind:"fatal", error:new Error("unknown outbox entry") };
+        if(out.kind === "ok" || out.kind === "dup"){
+          if(e.kind === "fav" && !(await p2StillQueued(e))) continue;   // changed while the request was in flight: leave the newer entry
+          await p2Del("outbox", e.id); didAny = true;
+          if(e.kind === "session"){ p2SyncedLocal(uid, e.row, out.data); didSession = true; }
+        } else if(out.kind === "retry" || out.kind === "auth"){ blocked = true; break; }
+        else {
+          e.state = "failed"; e.err = String((out.error && out.error.message) || "rejected").slice(0, 200);
+          await p2Put("outbox", e);
+          console.warn("Offline sync: the server rejected a queued item", e.kind, out.error);
+        }
+      }
+    }
+  } catch(err){ console.warn("Offline sync error", err); blocked = true; }
+  finally { p2Syncing = false; }
+  await p2Recount();
+  if(authUser && authUser.id === uid){
+    if(didSession){ try { await syncAchievements(); } catch(e){} }
+    if(didAny){ p2RetryDelay = 0; if(p2PendingCount === 0) p2SaveSnapshot(uid); renderHome(); refreshActiveDataScreen(); }
+    if(blocked && p2PendingCount > 0){
+      p2RetryDelay = Math.min(60000, p2RetryDelay ? p2RetryDelay * 2 : 5000);
+      p2RetryTimer = setTimeout(() => p2Flush(false), p2RetryDelay);
+    }
+  }
+}
+
+// ---------- status pill ----------
+function p2RenderStatus(){
+  const offline = p2IsOffline();
+  const practicing = !!(rec && !rec.done);
+  const show = !!authUser && !practicing && (offline || p2Syncing || p2PendingCount > 0 || p2FailedCount > 0);
+  let el = document.getElementById("p2-status");
+  if(!el){
+    if(!show) return;
+    el = document.createElement("div"); el.id = "p2-status"; el.setAttribute("role", "status");
+    el.style.cssText = "position:fixed;left:12px;bottom:12px;z-index:9999;max-width:calc(100vw - 24px);padding:8px 12px;border-radius:999px;background:#1d2a24;color:#e8f3ec;border:1px solid #3a5a4a;font:13px/1.3 system-ui,sans-serif;display:flex;gap:8px;align-items:center";
+    document.body.appendChild(el);
+  }
+  el.style.display = show ? "flex" : "none";
+  if(!show) return;
+  el.textContent = "";
+  const parts = [];
+  if(p2Syncing) parts.push("Syncing...");
+  else {
+    if(offline) parts.push("Offline");
+    if(p2PendingCount) parts.push(p2PendingCount + " waiting to sync");
+    if(p2FailedCount) parts.push(p2FailedCount + " couldn't sync");
+  }
+  const t = document.createElement("span"); t.textContent = parts.join(" - "); el.appendChild(t);
+  if(!offline && !p2Syncing && (p2PendingCount || p2FailedCount)){
+    const b = document.createElement("button"); b.type = "button"; b.textContent = "Sync now";
+    b.style.cssText = "background:transparent;color:inherit;border:1px solid currentColor;border-radius:999px;padding:2px 10px;font:inherit;cursor:pointer";
+    b.onclick = () => p2Flush(true);
+    el.appendChild(b);
+  }
+}
+
+// ---------- logout ----------
+async function p2ConfirmLogout(){
+  if(!authUser) return true;
+  await p2Recount();
+  if(p2PendingCount > 0 && !p2IsOffline()) await p2Flush(false);   // try once before leaving
+  if(p2PendingCount === 0 && p2FailedCount === 0) return true;
+  const n = p2PendingCount + p2FailedCount;
+  return window.confirm(n + " item(s) haven't synced yet. They stay saved on this device and will sync the next time you log in to this account. Log out anyway?");
+}
+
+// ---------- offline start ----------
+// If supabase-js reports no session while the device is offline (for example an expired
+// access token it cannot refresh), fall back to the identity it stored locally. This is
+// only a UI identity: the server still checks the real token whenever a request is made.
+function p2ProvisionalUser(){
+  try {
+    if(!p2IsOffline()) return null;
+    const key = "sb-" + new URL(SUPABASE_URL).hostname.split(".")[0] + "-auth-token";
+    const raw = window.localStorage.getItem(key); if(!raw) return null;
+    const u = JSON.parse(raw).user;
+    return (u && typeof u.id === "string") ? u : null;
+  } catch(e){ return null; }
+}
+async function p2StartProvisional(){
+  const prov = p2ProvisionalUser();
+  if(!prov || authUser) return;
+  authUser = prov; p2ProvisionalAuth = true;
+  await loadProfile(); renderAuthHeader(); loadUserData();
+}
+async function p2ReconcileProvisional(){
+  if(!p2ProvisionalAuth) return;
+  let res = null;
+  try { res = await sb.auth.getSession(); } catch(e){ return; }
+  if(res && res.data && res.data.session){ p2ProvisionalAuth = false; return; }
+  if(res && res.error && p2IsNetworkError(res.error)) return;   // server still unreachable: stay as we are
+  p2ProvisionalAuth = false; authUser = null; authProfile = null;
+  resetSavedRoutineState(); resetUserData(); renderAuthHeader();
+  toast("Please log in again to sync your saved items.");
+}
+
+window.addEventListener("online", async () => {
+  p2RenderStatus();
+  try { await sb.auth.getSession(); } catch(e){}   // lets supabase-js refresh an expired token right away
+  await p2ReconcileProvisional();
+  if(authUser){
+    if(userData.loaded && !userData.available) loadUserData(true);
+    p2Flush(false);
+  }
+});
+window.addEventListener("offline", () => p2RenderStatus());
+document.addEventListener("visibilitychange", () => { if(document.visibilityState === "visible" && authUser) p2Flush(false); });
+
+// ---------- service worker (app shell + CDN files) ----------
+if("serviceWorker" in navigator){
+  const p2RegisterSw = () => {
+    navigator.serviceWorker.register("sw.js").then(reg => {
+      reg.addEventListener("updatefound", () => {
+        const w = reg.installing; if(!w) return;
+        w.addEventListener("statechange", () => {
+          if(w.state === "installed" && navigator.serviceWorker.controller) toast("Update ready. Reload to get the latest version.");
+        });
+      });
+    }).catch(e => console.warn("Service worker not registered", e));
+  };
+  if(document.readyState === "complete") p2RegisterSw(); else window.addEventListener("load", p2RegisterSw);
+}
+// ===== PHASE 2 OFFLINE: END =====
 let lastLaunch = null;          // how to "Practice Again"
 let todayPlanCache = null;
 let historyShown = 20;
@@ -1567,6 +1905,7 @@ function friendlyAuthError(error){
 
 function renderAuthHeader(){
   renderHome();
+  p2RenderStatus();
   const el = document.getElementById("auth-header-area");
   if (!el) return;
   if (authUser) {
@@ -1700,8 +2039,13 @@ window.doUpdatePassword = async function(){
 };
 
 window.doLogout = async function(){
-  try { await sb.auth.signOut(); } catch(e) {}
-  authUser = null; authProfile = null;
+  if(!(await p2ConfirmLogout())) return;
+  try {
+    const r = await sb.auth.signOut();
+    if(r && r.error) await sb.auth.signOut({ scope:"local" });   // e.g. offline: still clear the local session
+  } catch(e) { try { await sb.auth.signOut({ scope:"local" }); } catch(e2) {} }
+  authUser = null; authProfile = null; p2ProvisionalAuth = false;
+  p2Clear("cache");
   resetSavedRoutineState();
   resetUserData();
   renderAuthHeader();
@@ -1710,11 +2054,20 @@ window.doLogout = async function(){
 
 async function loadProfile(){
   if (!authUser) { authProfile = null; return; }
+  const uid = authUser.id;
+  const fromCache = async () => {
+    if (authProfile && authProfile.id === uid) return;
+    const c = await p2CacheGet(uid, "profile");
+    if (c && authUser && authUser.id === uid) authProfile = c;
+  };
   try {
-    const { data, error } = await sb.from("profiles").select("*").eq("id", authUser.id).single();
-    if (!error) authProfile = data;
+    const { data, error } = await p2WithTimeout(sb.from("profiles").select("*").eq("id", uid).single(), 15000);
+    if (!authUser || authUser.id !== uid) return;
+    if (!error) { authProfile = data; p2CacheSet(uid, "profile", data); }
+    else if (p2IsNetworkError(error)) await fromCache();
   } catch(e) {
     console.warn("Could not load profile", e);
+    if (p2IsNetworkError(e)) await fromCache();
   }
 }
 
@@ -1739,14 +2092,19 @@ window.showAccountScreen = async function(){
       await loadProfile();
       renderAuthHeader();
       loadUserData();
+    } else {
+      await p2StartProvisional();   // offline start with no usable session: use the locally stored identity
     }
   } catch(e) {
     console.warn("Supabase session check failed (is SUPABASE_URL/KEY set?)", e);
+    try { await p2StartProvisional(); } catch(e2) {}
   }
 
   try {
     sb.auth.onAuthStateChange(async (event, session) => {
   if (event === "PASSWORD_RECOVERY") { showAuthScreen("recovery"); return; }
+  // Offline start: supabase-js may report "no session" while the local identity is in use. Keep it.
+  if (!session && event === "INITIAL_SESSION" && p2ProvisionalAuth && authUser) return;
 
   const nextUserId = session ? session.user.id : null;
   const previousUserId = authUser ? authUser.id : null;
@@ -1756,12 +2114,26 @@ window.showAccountScreen = async function(){
   }
 
   authUser = session ? session.user : null;
-      if (authUser) await loadProfile(); else { authProfile = null; resetUserData(); }
-      renderAuthHeader();
-      if (authUser) setTimeout(()=>loadUserData(), 0);
-      // Only prompt personalization on a genuine sign-in action (fresh
-      // signup or login), never on a background token refresh.
-      if (event === "SIGNED_IN") checkFirstTimePersonalization();
+      if (session) p2ProvisionalAuth = false;
+      if (authUser) {
+        const uid = authUser.id;
+        renderAuthHeader();
+        // Never await Supabase calls inside onAuthStateChange (it can deadlock supabase-js): defer them.
+        setTimeout(async () => {
+          await loadProfile();
+          if (!authUser || authUser.id !== uid) return;
+          renderAuthHeader();
+          loadUserData();
+          p2PurgeCacheExcept(uid);   // drop cached data that belongs to any other account
+          // Only prompt personalization on a genuine sign-in action (fresh
+          // signup or login), never on a background token refresh.
+          if (event === "SIGNED_IN") checkFirstTimePersonalization();
+        }, 0);
+      } else {
+        authProfile = null; resetUserData();
+        if (event === "SIGNED_OUT") p2Clear("cache");
+        renderAuthHeader();
+      }
     });
   } catch(e) {
     console.warn("Supabase auth listener could not start", e);
@@ -3317,11 +3689,14 @@ async function loadSavedRoutines(){
     if(seq !== savedRoutinesLoadSeq) return;            // a newer load or an account reset took over and will render
     if(!authUser || authUser.id !== uid){ savedRoutines = []; savedRoutinesUid = null; savedRoutinesState = "idle"; }
     else if(error) throw error;
-    else { savedRoutines = data || []; savedRoutinesUid = uid; savedRoutinesState = "ready"; }
+    else { savedRoutines = data || []; savedRoutinesUid = uid; savedRoutinesState = "ready"; p2CacheSet(uid, "routines", savedRoutines); }
   } catch(e){
     if(seq !== savedRoutinesLoadSeq) return;
     console.error("loadSavedRoutines failed:", e);
-    savedRoutines = []; savedRoutinesUid = authUser ? authUser.id : null; savedRoutinesState = "error";
+    const cached = (authUser && p2IsNetworkError(e)) ? await p2CacheGet(uid, "routines") : null;   // offline: show the last saved list
+    if(seq !== savedRoutinesLoadSeq) return;
+    if(Array.isArray(cached) && authUser && authUser.id === uid){ savedRoutines = cached; savedRoutinesUid = uid; savedRoutinesState = "ready"; }
+    else { savedRoutines = []; savedRoutinesUid = authUser ? authUser.id : null; savedRoutinesState = "error"; }
   }
   renderSavedRoutines();
 }
@@ -3371,6 +3746,7 @@ function knownStepNames(steps){
 window.saveCurrentRoutine = async function(){
   if(savedRoutineBusy) return;
   if(!authUser){ toast("Log in to save routines."); return; }
+  if(p2IsOffline()){ toast("Saving routines needs an internet connection."); return; }
   const name = validRoutineName(document.getElementById("routine-name-input").value);
   if(!name) return;
   if(!myRoutine.length){ toast("Add at least one step first."); return; }
@@ -3421,6 +3797,7 @@ window.cancelRoutineEdit = function(){
 window.renameSavedRoutine = async function(id){
   if(savedRoutineBusy || !authUser) return;
   const r = savedRoutinesForUser().find(x => x.id === id); if(!r) return;
+  if(p2IsOffline()){ toast("Renaming routines needs an internet connection."); return; }
   const input = window.prompt("New name for this routine:", r.name);
   if(input === null) return;
   const name = validRoutineName(input); if(!name || name === r.name) return;
@@ -3437,6 +3814,7 @@ window.renameSavedRoutine = async function(id){
 window.deleteSavedRoutine = async function(id){
   if(savedRoutineBusy || !authUser) return;
   const r = savedRoutinesForUser().find(x => x.id === id); if(!r) return;
+  if(p2IsOffline()){ toast("Deleting routines needs an internet connection."); return; }
   if(!window.confirm('Delete "' + r.name + '"? This cannot be undone.')) return;
   savedRoutineBusy = true; renderSavedRoutines();
   try {
@@ -3932,46 +4310,62 @@ async function loadUserData(force){
   const uid = authUser.id;
   userData.loading = true;
   try {
-    const [s, f, a] = await Promise.all([
+    const [s, f, a] = await p2WithTimeout(Promise.all([
       sb.from("practice_sessions").select("*").eq("user_id", uid).order("completed_at", { ascending:false }).limit(1000),
       sb.from("favorites").select("kind,item_key,item_name").eq("user_id", uid),
       sb.from("user_achievements").select("achievement_key,unlocked_at").eq("user_id", uid),
-    ]);
+    ]), 15000);
     if(!authUser || authUser.id !== uid) return;   // logged out / switched while loading
     const err = s.error || f.error || a.error;
-    if(err){ userData.available = false; userData.errorMsg = err.message || "Could not load your data."; }
+    if(err){
+      // Offline / unreachable: fall back to the last data saved on this device for this account.
+      if(p2IsNetworkError(err) && await p2FallbackToSnapshot(uid)){ userData.available = true; userData.errorMsg = ""; }
+      else { userData.available = false; userData.errorMsg = err.message || "Could not load your data."; }
+    }
     else {
       userData.available = true; userData.errorMsg = "";
       userData.sessions = s.data || [];
       userData.favoriteRows = f.data || [];
       userData.favorites = new Set(userData.favoriteRows.map(r=>r.kind + ":" + r.item_key));
       userData.achievements = new Map((a.data || []).map(r=>[r.achievement_key, r.unlocked_at]));
+      p2SaveSnapshot(uid);   // server state only; queued items are merged below
     }
+    if(userData.available) await p2ApplyOutbox(uid);
     userData.loaded = true;
   } catch(e){
     console.warn("Could not load user data", e);
-    userData.available = false; userData.errorMsg = "Could not reach the server."; userData.loaded = true;
+    if(p2IsNetworkError(e) && authUser && authUser.id === uid && await p2FallbackToSnapshot(uid)){
+      userData.available = true; userData.errorMsg = ""; await p2ApplyOutbox(uid);
+    } else { userData.available = false; userData.errorMsg = "Could not reach the server."; }
+    userData.loaded = true;
   } finally {
     userData.loading = false; todayPlanCache = null;
     renderHome(); refreshActiveDataScreen();
     if(userData.available) syncAchievements().catch(()=>{});   // silent backfill, no announcement
+    p2Recount(); setTimeout(() => p2Flush(false), 0);           // send anything queued while offline
   }
 }
 
 async function saveSessionRow(row){
   if(!authUser) return { ok:false, reason:"logged-out" };
-  try {
-    const { data, error } = await sb.from("practice_sessions").insert({ ...row, user_id: authUser.id }).select().single();
-    if(error) return { ok:false, reason:"error", error };
-    userData.sessions.unshift(data); todayPlanCache = null;
-    return { ok:true, data };
-  } catch(e){ return { ok:false, reason:"error", error:e }; }
+  const uid = authUser.id;
+  if(!row.id) row.id = p2Uuid();   // persistSummary re-sends this same row object on "Try again": the id makes retries idempotent
+  const out = p2IsOffline() ? { kind:"retry" } : await p2InsertSession(uid, row);
+  if(out.kind === "ok" || out.kind === "dup"){
+    p2SyncedLocal(uid, row, out.data);
+    if(userData.uid === uid && p2PendingCount === 0) p2SaveSnapshot(uid);
+    return { ok:true, data: out.data || row };
+  }
+  // No connection (or no valid login right now): keep it on this device and sync later.
+  if((out.kind === "retry" || out.kind === "auth") && await p2QueueSession(uid, JSON.parse(JSON.stringify(row)))) return { ok:true, queued:true, data:row };
+  return { ok:false, reason:"error", error: out.error };
 }
 
 // Unlocks anything newly earned. Returns ONLY achievements inserted just now (those get the animation).
 async function syncAchievements(){
   if(!authUser) return [];
-  const stats = computeStats(userData.sessions, todayStr());
+  if(p2IsOffline()) return [];   // achievements are only written once the sessions behind them are on the server
+  const stats = computeStats(userData.sessions.filter(s=>!s._pending), todayStr());
   const fresh = ACHIEVEMENTS.filter(a=>a.test(stats) && !userData.achievements.has(a.key));
   if(!fresh.length) return [];
   const { data, error } = await sb.from("user_achievements")
@@ -4005,19 +4399,26 @@ function setStaticFav(id, kind, key, name){
 function refreshPracticeFav(name){ if(name) setStaticFav("practice-fav", ALL_COUNTERS.includes(name) ? "exercise" : "asana", name, name); }
 async function toggleFavorite(kind, key, name){
   if(!authUser){ toast("Log in to save favorites."); return; }
+  const uid = authUser.id;
   const id = kind + ":" + key, had = userData.favorites.has(id);
   if(had){ userData.favorites.delete(id); userData.favoriteRows = userData.favoriteRows.filter(r=>!(r.kind === kind && r.item_key === key)); }
   else { userData.favorites.add(id); userData.favoriteRows.push({ kind, item_key:key, item_name:name }); }
   todayPlanCache = null; refreshFavButtons();
   try {
+    if(p2IsOffline()) throw new Error("offline");   // handled below: queued for later
     const res = had
-      ? await sb.from("favorites").delete().eq("user_id", authUser.id).eq("kind", kind).eq("item_key", key)
-      : await sb.from("favorites").upsert({ user_id:authUser.id, kind, item_key:key, item_name:name }, { onConflict:"user_id,kind,item_key", ignoreDuplicates:true });
+      ? await sb.from("favorites").delete().eq("user_id", uid).eq("kind", kind).eq("item_key", key)
+      : await sb.from("favorites").upsert({ user_id:uid, kind, item_key:key, item_name:name }, { onConflict:"user_id,kind,item_key", ignoreDuplicates:true });
     if(res.error) throw res.error;
+    p2Del("outbox", p2FavId(uid, kind, key));   // an online choice replaces any queued one for this item
   } catch(e){
-    if(had){ userData.favorites.add(id); userData.favoriteRows.push({ kind, item_key:key, item_name:name }); }
-    else { userData.favorites.delete(id); userData.favoriteRows = userData.favoriteRows.filter(r=>!(r.kind === kind && r.item_key === key)); }
-    refreshFavButtons(); toast("Couldn't update favorites. Please try again.");
+    if(p2IsNetworkError(e) && await p2QueueFav(uid, had ? "remove" : "add", { kind, item_key:key, item_name:name })){
+      toast("Saved on this device. It will sync when you're back online."); p2Recount();
+    } else {
+      if(had){ userData.favorites.add(id); userData.favoriteRows.push({ kind, item_key:key, item_name:name }); }
+      else { userData.favorites.delete(id); userData.favoriteRows = userData.favoriteRows.filter(r=>!(r.kind === kind && r.item_key === key)); }
+      refreshFavButtons(); toast("Couldn't update favorites. Please try again.");
+    }
   }
   renderHome(); refreshActiveDataScreen();
 }
@@ -4166,7 +4567,7 @@ async function persistSummary(){
   const res = await saveSessionRow(ls.result.row);
   if(lastSummary !== ls) return;
   if(!res.ok){ ls.saveState = "error"; renderSummary(); return; }
-  ls.saved = true; ls.saveState = "saved";
+  ls.saved = true; ls.saveState = res.queued ? "queued" : "saved";
   ls.stats = computeStats(userData.sessions, todayStr());
   ls.newAch = await syncAchievements();
   if(lastSummary === ls) renderSummary();
@@ -4197,7 +4598,7 @@ function renderSummary(){
   set("sum-notes", notes);
   set("sum-insight", ls.insightState === "loading" ? '<div class="hint">Writing your insight…</div>' : (ls.insight ? '<div class="insight-card"><span class="chip chip-ai">AI Insight</span><p>' + escapeHtml(ls.insight) + '</p></div>' : ""));
   set("sum-ach", ls.newAch.map(a=>'<div class="ach fresh"><span class="ico">' + a.icon + '</span><div><div class="ach-title">Achievement unlocked: ' + escapeHtml(a.title) + '</div><div class="tag">' + escapeHtml(a.desc) + '</div></div></div>').join(""));
-  const save = { saving:'Saving your session…', saved:'Session saved to your history.', guest:'Log in to save sessions to your history. <button class="auth-link" data-act="sumLogin">Log in</button>',
+  const save = { saving:'Saving your session…', saved:'Session saved to your history.', queued:'Saved on this device. It will sync to your history when you\'re back online.', guest:'Log in to save sessions to your history. <button class="auth-link" data-act="sumLogin">Log in</button>',
                  error:'Couldn\'t save this session. <button class="auth-link" data-act="retrySave">Try again</button>' }[ls.saveState];
   set("sum-save", save);
 }
@@ -4220,7 +4621,8 @@ function leavePracticeScreen(){
   const result = (rec && !rec.done) ? recFinalize("left") : null;
   if(result && authUser){
     saveSessionRow(result.row).then(r=>{
-      if(!r.ok) return;
+      if(!r.ok){ toast("Couldn't save that session."); return; }
+      if(r.queued){ toast("Saved on this device. It will sync when you're back online."); renderHome(); return; }
       toast("Session saved to your history.");
       syncAchievements().then(a=>{ if(a.length) toast("Achievement unlocked: " + a[0].title); });
       renderHome();
