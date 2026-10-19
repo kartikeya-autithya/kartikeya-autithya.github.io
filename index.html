@@ -458,6 +458,63 @@
     .ya-btn, .ya-plan, .ya-seq, .ya-card, .home-card, .ya-asana, .ya-asana .nm, .ya-bg-layer, .ya-ph, .ya-ask-list button { transition:none; transform:none !important; }
     .ya-bg-layer, .ya-ph { transform:none; }
   }
+  /* ===== Messages (user-to-user chat) ===== */
+  .dm-badge { display:inline-block; background:var(--accent); color:#10241a; border-radius:999px; font-size:.7rem; font-weight:700; padding:1px 7px; margin-left:8px; min-width:18px; text-align:center; }
+  .dm-banner { background:#2a2417; border:1px solid #5b4a1e; color:#e9d9a6; border-radius:10px; padding:8px 12px; font-size:.85rem; margin:0 0 12px 0; }
+  .dm-wrap { display:grid; grid-template-columns:minmax(260px,340px) 1fr; gap:16px; align-items:start; }
+  .dm-side, .dm-main { background:#0f1612; border:1px solid var(--border); border-radius:14px; padding:14px; min-width:0; }
+  .dm-main { min-height:420px; display:flex; flex-direction:column; }
+  .dm-tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+  .dm-tab { padding:8px 12px; font-size:.85rem; }
+  .dm-tab-on { outline:2px solid var(--accent); }
+  .dm-search { width:100%; background:#0f1612; border:1px solid var(--border); color:var(--text); border-radius:8px; padding:10px 12px; font-size:.92rem; font-family:inherit; margin-bottom:10px; }
+  .dm-conv { display:flex; align-items:center; gap:10px; width:100%; text-align:left; background:transparent; border:1px solid transparent; border-radius:10px; padding:10px; color:var(--text); font-weight:500; }
+  .dm-conv:hover { background:#16201b; opacity:1; }
+  .dm-conv-on { background:#16201b; border-color:var(--border); }
+  .dm-static { cursor:default; }
+  .dm-conv-mid { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+  .dm-conv-name { font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .dm-conv-prev { color:var(--text-dim); font-size:.82rem; font-weight:400; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .dm-conv-right { display:flex; flex-direction:column; align-items:flex-end; gap:4px; font-size:.72rem; color:var(--text-dim); }
+  .dm-conv-right .dm-badge { margin-left:0; }
+  .dm-avatar { flex:none; width:38px; height:38px; border-radius:50%; background:rgba(79,209,176,.14); border:1px solid rgba(79,209,176,.4); color:var(--accent); display:inline-grid; place-items:center; font-weight:700; font-size:.85rem; }
+  .dm-avatar-lg { width:72px; height:72px; font-size:1.4rem; }
+  .dm-head { display:flex; align-items:center; gap:10px; padding-bottom:10px; border-bottom:1px solid var(--border); margin-bottom:10px; flex-wrap:wrap; }
+  .dm-head-name { font-weight:600; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .dm-head-actions { display:flex; gap:12px; }
+  .dm-mainback { display:none; padding:6px 12px; font-size:.85rem; }
+  .dm-link { background:transparent; color:var(--accent); padding:2px 4px; font-size:.78rem; font-weight:600; border-radius:4px; }
+  .dm-msgs { flex:1; min-height:260px; max-height:55vh; overflow-y:auto; display:flex; flex-direction:column; gap:6px; padding:4px 2px; }
+  .dm-day { align-self:center; color:var(--text-dim); font-size:.72rem; margin:8px 0 2px; }
+  .dm-row { display:flex; flex-direction:column; max-width:78%; }
+  .dm-mine { align-self:flex-end; align-items:flex-end; }
+  .dm-theirs { align-self:flex-start; align-items:flex-start; }
+  .dm-bubble { padding:9px 13px; border-radius:16px; white-space:pre-wrap; overflow-wrap:anywhere; word-break:break-word; line-height:1.4; font-size:.93rem; }
+  .dm-mine .dm-bubble { background:var(--accent); color:#10241a; border-bottom-right-radius:4px; }
+  .dm-theirs .dm-bubble { background:#1c2823; color:var(--text); border-bottom-left-radius:4px; }
+  .dm-sending .dm-bubble { opacity:.6; }
+  .dm-failed .dm-bubble { background:transparent; color:var(--text); border:1px solid var(--danger); }
+  .dm-meta { font-size:.7rem; color:var(--text-dim); margin-top:2px; display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+  .dm-err { color:var(--danger); }
+  .dm-more { align-self:center; padding:6px 14px; font-size:.8rem; }
+  .dm-notice { background:#1c2823; border-radius:8px; padding:8px 12px; font-size:.82rem; color:var(--text-dim); margin-top:8px; }
+  .dm-composer { display:flex; gap:8px; align-items:flex-end; margin-top:10px; }
+  .dm-composer textarea { flex:1; resize:none; min-height:42px; max-height:140px; }
+  .dm-count { font-size:.7rem; color:var(--text-dim); text-align:right; min-height:12px; }
+  .dm-person { text-align:center; padding:16px 8px; }
+  .dm-person .nav-row { justify-content:center; }
+  .dm-bio { color:var(--text-dim); margin:8px 0 12px; overflow-wrap:anywhere; }
+  .dm-chips { display:flex; gap:6px; flex-wrap:wrap; justify-content:center; }
+  .dm-note { background:#1c2823; border-radius:8px; padding:10px 12px; font-size:.82rem; color:var(--text-dim); text-align:left; margin:10px 0; }
+  .dm-toggle { margin-top:8px; }
+  @media (max-width: 820px) {
+    .dm-wrap { grid-template-columns:1fr; }
+    .dm-wrap.dm-has-main .dm-side { display:none; }
+    .dm-wrap:not(.dm-has-main) .dm-main { display:none; }
+    .dm-mainback { display:inline-block; }
+    .dm-row { max-width:88%; }
+    .dm-msgs { max-height:50vh; }
+  }
 </style>
 </head>
 <body class="is-home">
@@ -646,6 +703,11 @@
         <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 0 1-11.6 7.1L4 20l1-4A8 8 0 1 1 20 12z"/></svg></span>
         <div class="title">Chat with Yoga Assistant</div>
         <div class="desc">Ask about poses, form, or wellness</div>
+      </div>
+      <div class="home-card" tabindex="0" role="button" onclick="showMessages()">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg></span>
+        <div class="title">Messages <span id="dm-home-badge" class="dm-badge" style="display:none;"></span></div>
+        <div class="desc">Message other members privately</div>
       </div>
         </div>
       </div>
@@ -934,6 +996,22 @@
         <button class="btn-primary" id="start-routine-btn" onclick="startCustomRoutine()" disabled>Start My Routine</button>
         <button class="btn-secondary" id="save-routine-btn" onclick="saveCurrentRoutine()">Save routine</button>
         <button class="btn-secondary" id="cancel-edit-btn" onclick="cancelRoutineEdit()" style="display:none;">Cancel edit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN: MESSAGES (user-to-user chat) -->
+  <div id="messages-screen" class="screen">
+    <div class="card">
+      <button class="back-link" onclick="dmBack()">← Back</button>
+      <h2>Messages</h2>
+      <div id="dm-banner" class="dm-banner" role="status" style="display:none;"></div>
+      <div id="dm-wrap" class="dm-wrap">
+        <div id="dm-side" class="dm-side">
+          <div id="dm-tabs" class="dm-tabs"></div>
+          <div id="dm-side-body"></div>
+        </div>
+        <div id="dm-main" class="dm-main"></div>
       </div>
     </div>
   </div>
@@ -1914,6 +1992,7 @@ function friendlyAuthError(error){
 function renderAuthHeader(){
   renderHome();
   p2RenderStatus();
+  try { dmRenderAll(); } catch(e) {}   // Messages screen follows the signed-in user (the try/catch only guards very early startup)
   const el = document.getElementById("auth-header-area");
   if (!el) return;
   if (authUser) {
@@ -2100,6 +2179,7 @@ window.showAccountScreen = async function(){
       await loadProfile();
       renderAuthHeader();
       loadUserData();
+      dmEnsureStarted();
     } else {
       await p2StartProvisional();   // offline start with no usable session: use the locally stored identity
     }
@@ -2133,6 +2213,7 @@ window.showAccountScreen = async function(){
           renderAuthHeader();
           loadUserData();
           p2PurgeCacheExcept(uid);   // drop cached data that belongs to any other account
+          dmEnsureStarted();         // unread badge + Realtime for Messages
           // Only prompt personalization on a genuine sign-in action (fresh
           // signup or login), never on a background token refresh.
           if (event === "SIGNED_IN") checkFirstTimePersonalization();
@@ -3658,7 +3739,33 @@ function routineSuggestReset(){
   routineSuggest.seq++; routineSuggest.busy = false; routineSuggest.result = null; routineSuggest.error = ""; routineSuggest.minutesTouched = false;
   renderRoutineSuggest();
 }
+// ---------- Messages: in-memory state (declared here so resetSavedRoutineState can reset it safely) ----------
+// Private messages, conversation lists, profiles and unread counts live ONLY in `dm`. Nothing here is ever written to
+// localStorage, IndexedDB or any cache. dmReset() runs on logout and on every account change.
+let dmGen = 0;      // bumped on every reset: any async step that started under an older generation is ignored
+function dmNewState(){
+  return {
+    uid:null, started:false, side:"list",
+    profile:null, profileState:"idle",
+    convs:[], convState:"idle",
+    main:{ kind:"none" }, active:null, ui:null, sideUi:null,
+    msgs:[], hasMore:false, threadState:"idle", threadSeq:0, loadingMore:false,
+    sending:false, lastSendAt:0,
+    people:[], peopleState:"idle", peopleQ:"", peopleEnd:false, peopleSeq:0, peopleBusy:null, peopleResultsQ:null, peopleErr:"", profileBusy:false,
+    blocked:[], blockedState:"idle", saving:false,
+    channel:null, chanState:"", retryTimer:null, retryDelay:0, markTimer:null, listTimer:null, searchTimer:null
+  };
+}
+let dm = dmNewState();
+function dmReset(){
+  dmGen++;
+  try { if(dm.channel) sb.removeChannel(dm.channel); } catch(e){}
+  [dm.retryTimer, dm.markTimer, dm.listTimer, dm.searchTimer].forEach(t => { if(t) clearTimeout(t); });
+  dm = dmNewState();
+  dmRenderAll();
+}
 function resetSavedRoutineState() {
+  dmReset();                       // private messages of the previous account must never stay in memory or on screen
   routineSuggestReset();           // a suggestion made for the previous account must never be shown or used
   savedRoutinesLoadSeq++;          // any load still in flight belongs to the previous account: ignore its result
   savedRoutines = [];
@@ -4960,6 +5067,699 @@ function renderRoutineSuggest(){
     window.addEventListener("offline", renderRoutineSuggest);
   } catch(e){ console.warn("Routine suggestion UI could not start", e); }
 })();
+
+// ===== MESSAGES (user-to-user chat) =====
+// Talks to Supabase directly: every rule (who may read, send, block, report) is enforced by the database. Nothing here
+// goes through the Gemini Worker. Message text is only ever put on screen with textContent.
+const DM_PAGE = 30, DM_MAX_LEN = 2000, DM_MIN_GAP_MS = 700, DM_SEARCH_PAGE = 20;
+const DM_MSG_COLS = "id,conversation_id,seq,from_low,body,created_at";
+const DM_PROFILE_COLS = "public_id,display_name,bio,interests,discoverable,allow_messages";
+const DM_REASONS = [["spam", "Spam"], ["harassment", "Harassment or bullying"], ["inappropriate", "Inappropriate content"], ["other", "Something else"]];
+const DM_REPORT_NOTE = "Reports go to the app owner. They are not reviewed automatically and there is no moderation team, so it may take a while before anyone sees it. If you report a message, its text is included.";
+
+function dmEl(tag, cls, text){ const e = document.createElement(tag); if(cls) e.className = cls; if(text != null) e.textContent = String(text); return e; }
+function dmBtn(label, cls, fn){ const b = dmEl("button", cls, label); b.type = "button"; if(fn) b.onclick = fn; return b; }
+function dmInitials(name){
+  const parts = String(name || "").trim().split(/\s+/).filter(Boolean).slice(0, 2);
+  return parts.map(p => Array.from(p)[0] || "").join("").toUpperCase() || "?";
+}
+function dmAvatar(name, big){ const a = dmEl("span", "dm-avatar" + (big ? " dm-avatar-lg" : ""), dmInitials(name)); a.setAttribute("aria-hidden", "true"); return a; }
+function dmIsMobile(){ return !!(window.matchMedia && window.matchMedia("(max-width: 820px)").matches); }
+function dmScreenActive(){ const s = document.getElementById("messages-screen"); return !!(s && s.classList.contains("active")); }
+function dmVisible(){ return dmScreenActive() && document.visibilityState !== "hidden"; }
+function dmFmtTime(iso){ const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" }); }
+function dmFmtListTime(iso){
+  const d = new Date(iso); if(isNaN(d)) return "";
+  return d.toDateString() === new Date().toDateString() ? dmFmtTime(iso) : d.toLocaleDateString([], { month:"short", day:"numeric" });
+}
+function dmDayLabel(iso){
+  const d = new Date(iso); if(isNaN(d)) return "";
+  const t = new Date(); if(d.toDateString() === t.toDateString()) return "Today";
+  const y = new Date(); y.setDate(t.getDate() - 1); if(d.toDateString() === y.toDateString()) return "Yesterday";
+  return d.toLocaleDateString([], { weekday:"short", month:"short", day:"numeric" });
+}
+function dmErrorText(err, fallback){
+  const m = String((err && (err.message || err.details)) || err || "");
+  if(/DM_NEEDS_PROFILE/.test(m)) return "Set up your chat profile first.";
+  if(/DM_NOT_ALLOWED|row-level security/.test(m) || (err && err.code === "42501")) return "That isn't possible with this person.";
+  if(/DM_RATE_LIMITED/.test(m) || (err && err.code === "53400")) return "You're doing that too fast. Please wait a moment and try again.";
+  if(/DM_LIMIT/.test(m)) return "You've reached a limit. Remove something and try again.";
+  if(p2IsNetworkError(err)) return "No connection. Check your internet and try again.";
+  return fallback || "Something went wrong. Please try again.";
+}
+function dmNormRow(r){ return { id:r.id, conversation_id:r.conversation_id, seq:Number(r.seq), from_low:!!r.from_low, body:String(r.body), created_at:r.created_at }; }
+function dmConvFromRow(r){
+  return { id:r.conv_id, peerPid:r.peer_public_id, peerName:r.peer_name || "Member", lastBody:r.last_body || "", lastAt:r.last_at,
+           lastFromMe:!!r.last_from_me, unread:Number(r.unread) || 0, blockedByMe:!!r.blocked_by_me, iAmLow:!!r.i_am_low };
+}
+function dmSortMsgs(){
+  dm.msgs.sort((a, b) => {
+    const as = a.seq == null ? Infinity : a.seq, bs = b.seq == null ? Infinity : b.seq;
+    if(as === bs) return as === Infinity ? String(a.created_at).localeCompare(String(b.created_at)) : 0;
+    return as < bs ? -1 : 1;
+  });
+}
+function dmMaxSeq(){ let m = 0; dm.msgs.forEach(x => { if(!x.local && x.seq > m) m = x.seq; }); return m; }
+function dmMinSeq(){ let m = Infinity; dm.msgs.forEach(x => { if(!x.local && x.seq < m) m = x.seq; }); return m === Infinity ? 0 : m; }
+function dmCurrent(gen, uid){ return gen === dmGen && !!authUser && authUser.id === uid; }
+function dmUnreadTotal(){ return dm.convs.reduce((t, c) => t + (c.unread || 0), 0); }
+
+// ---------- start / stop ----------
+function dmEnsureStarted(){
+  if(!authUser) return;
+  if(dm.uid && dm.uid !== authUser.id) dmReset();
+  if(dm.started || p2IsOffline()) return;
+  dm.uid = authUser.id; dm.started = true;
+  dmLoadProfile(); dmLoadConversations(); dmStartRealtime();
+}
+function dmOnline(){
+  dmRenderBanner(); dmRenderComposer();
+  if(!authUser) return;
+  if(!dm.started){ dmEnsureStarted(); return; }
+  if(!dm.channel) dmStartRealtime(); else dmCatchUp();
+  if(dm.profileState !== "ready") dmLoadProfile();
+}
+function dmOnOffline(){ dmRenderBanner(); dmRenderComposer(); }
+function dmCatchUp(){ dmLoadConversations(); dmCatchUpThread(); }
+
+// ---------- Realtime ----------
+function dmStartRealtime(){
+  if(!authUser || dm.channel || p2IsOffline()) return;
+  const gen = dmGen;
+  let ch;
+  try {
+    ch = sb.channel("dm-" + p2Uuid().slice(0, 8));
+    ch.on("postgres_changes", { event:"INSERT", schema:"public", table:"dm_messages" }, payload => dmOnInsert(gen, payload && payload.new));
+    ch.subscribe(status => dmOnChannelStatus(gen, ch, status));
+  } catch(e){ console.warn("Messages: realtime could not start", e); return; }
+  dm.channel = ch;
+}
+function dmOnChannelStatus(gen, ch, status){
+  if(gen !== dmGen || dm.channel !== ch) return;
+  dm.chanState = status;
+  if(status === "SUBSCRIBED"){ dm.retryDelay = 0; dmRenderBanner(); dmCatchUp(); return; }   // also fills any gap after a reconnect
+  if(status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") dmScheduleResubscribe(gen);
+  dmRenderBanner();
+}
+function dmScheduleResubscribe(gen){
+  const old = dm.channel; dm.channel = null;
+  try { if(old) sb.removeChannel(old); } catch(e){}
+  clearTimeout(dm.retryTimer);
+  dm.retryDelay = Math.min(30000, dm.retryDelay ? dm.retryDelay * 2 : 2000);
+  dm.retryTimer = setTimeout(() => { if(gen === dmGen) dmStartRealtime(); }, dm.retryDelay);
+}
+function dmOnInsert(gen, raw){
+  if(gen !== dmGen || !authUser || !raw || !raw.conversation_id) return;
+  const row = dmNormRow(raw);
+  const conv = dm.convs.find(c => c.id === row.conversation_id);
+  const open = dm.active && dm.active.id === row.conversation_id;
+  if(!conv && !open){ dmLoadConversationsSoon(); return; }                       // a brand-new conversation
+  const c = conv || dm.active;
+  if(c.iAmLow === undefined){ dmLoadConversationsSoon(); }                          // cannot tell who sent it yet
+  const mine = c.iAmLow !== undefined && row.from_low === c.iAmLow;
+  if(open && dm.threadState === "ready"){
+    const existing = dm.msgs.find(m => m.id === row.id);
+    if(existing){ if(existing.local){ Object.assign(existing, row, { local:false, status:"sent", error:"" }); } }
+    else {
+      const gap = row.seq > dmMaxSeq() + 1 && dmMaxSeq() > 0;
+      dm.msgs.push(row); dmSortMsgs();
+      if(gap) dmCatchUpThread();
+    }
+    dmRenderMessages(mine);
+  }
+  if(conv){
+    conv.lastBody = row.body.slice(0, 120); conv.lastAt = row.created_at; conv.lastFromMe = mine;
+    if(!mine && !(open && dmVisible())) conv.unread = (conv.unread || 0) + 1;
+    dm.convs.sort((a, b) => String(b.lastAt).localeCompare(String(a.lastAt)));
+  }
+  if(open && !mine) dmMarkReadSoon();
+  dmUpdateBadge(); dmRefreshList();
+}
+function dmLoadConversationsSoon(){ clearTimeout(dm.listTimer); dm.listTimer = setTimeout(dmLoadConversations, 250); }
+
+// ---------- loading ----------
+async function dmLoadProfile(){
+  if(!authUser || dm.profileBusy || p2IsOffline()) return;      // one profile request at a time
+  const gen = dmGen, uid = authUser.id;
+  dm.profileBusy = true;
+  let res;
+  try { res = await p2WithTimeout(sb.from("chat_profiles").select(DM_PROFILE_COLS).eq("user_id", uid).maybeSingle(), 15000); }
+  catch(e){ res = { error:e }; }
+  if(!dmCurrent(gen, uid)) return;                              // account changed: this object is already gone
+  dm.profileBusy = false;
+  if(res.error){ dm.profileState = "error"; } else { dm.profile = res.data || null; dm.profileState = "ready"; }
+  // The directory may have been opened before the profile arrived: start its first search now instead of only redrawing.
+  // dmSearchPeople ignores the call if an identical search is already running, so this cannot create a duplicate.
+  if(dm.side === "people" && dm.profile && dm.peopleState === "idle") dmSearchPeople(true);
+  else if(dm.side === "profile" || dm.side === "people") dmRenderSide();
+}
+async function dmLoadConversations(){
+  if(!authUser || p2IsOffline()) return;
+  const gen = dmGen, uid = authUser.id;
+  if(dm.convState !== "ready"){ dm.convState = "loading"; dmRefreshList(); }
+  let res;
+  try { res = await p2WithTimeout(sb.rpc("dm_list_conversations"), 15000); } catch(e){ res = { error:e }; }
+  if(!dmCurrent(gen, uid)) return;
+  if(res.error){ if(dm.convState !== "ready") dm.convState = "error"; }
+  else {
+    const fresh = (res.data || []).map(dmConvFromRow);
+    if(dm.active){ const f = fresh.find(c => c.id === dm.active.id); if(f){ Object.assign(dm.active, f); fresh[fresh.indexOf(f)] = dm.active; } }
+    dm.convs = fresh; dm.convState = "ready";
+    if(dm.main.kind === "thread" && dm.active && dmVisible()){ dmRenderMessages(false); dmRenderComposer(); }
+  }
+  dmUpdateBadge(); dmRefreshList();
+}
+async function dmLoadThread(){
+  const conv = dm.active; if(!conv || !authUser) return;
+  const gen = dmGen, uid = authUser.id, tseq = ++dm.threadSeq;
+  dm.threadState = "loading"; dm.msgs = []; dm.hasMore = false; dmRenderMessages(true);
+  if(p2IsOffline()){ dm.threadState = "error"; dmRenderMessages(false); return; }
+  let res;
+  try { res = await p2WithTimeout(sb.from("dm_messages").select(DM_MSG_COLS).eq("conversation_id", conv.id).order("seq", { ascending:false }).limit(DM_PAGE), 15000); }
+  catch(e){ res = { error:e }; }
+  if(!dmCurrent(gen, uid) || tseq !== dm.threadSeq || !dm.active || dm.active.id !== conv.id) return;
+  if(res.error){ dm.threadState = "error"; dmRenderMessages(false); return; }
+  const rows = (res.data || []).map(dmNormRow).reverse();
+  const pending = dm.msgs.filter(m => m.local);
+  dm.msgs = rows.concat(pending); dm.hasMore = rows.length === DM_PAGE; dm.threadState = "ready"; dmSortMsgs();
+  dmRenderMessages(true); dmMarkReadSoon();
+  if(conv.iAmLow === undefined && rows.length) dmLoadConversationsSoon();
+}
+async function dmLoadEarlier(){
+  const conv = dm.active; if(!conv || !authUser || !dm.hasMore || dm.loadingMore || p2IsOffline()) return;
+  const gen = dmGen, uid = authUser.id, tseq = dm.threadSeq;
+  dm.loadingMore = true; dmRenderMessages(false);
+  let res;
+  try { res = await p2WithTimeout(sb.from("dm_messages").select(DM_MSG_COLS).eq("conversation_id", conv.id).lt("seq", dmMinSeq()).order("seq", { ascending:false }).limit(DM_PAGE), 15000); }
+  catch(e){ res = { error:e }; }
+  if(!dmCurrent(gen, uid) || tseq !== dm.threadSeq || !dm.active || dm.active.id !== conv.id) return;
+  dm.loadingMore = false;
+  if(res.error){ toast(dmErrorText(res.error, "Couldn't load earlier messages.")); dmRenderMessages(false); return; }
+  const rows = (res.data || []).map(dmNormRow);
+  const have = new Set(dm.msgs.map(m => m.id));
+  rows.forEach(r => { if(!have.has(r.id)) dm.msgs.push(r); });
+  dm.hasMore = rows.length === DM_PAGE; dmSortMsgs();
+  const list = dm.ui && dm.ui.list, before = list ? list.scrollHeight : 0;
+  dmRenderMessages(false);
+  if(list) list.scrollTop = list.scrollHeight - before;     // keep the reader where they were
+}
+async function dmCatchUpThread(){
+  const conv = dm.active; if(!conv || !authUser || dm.threadState !== "ready" || p2IsOffline()) return;
+  const gen = dmGen, uid = authUser.id, tseq = dm.threadSeq;
+  let res;
+  try { res = await p2WithTimeout(sb.from("dm_messages").select(DM_MSG_COLS).eq("conversation_id", conv.id).gt("seq", dmMaxSeq()).order("seq", { ascending:true }).limit(100), 15000); }
+  catch(e){ return; }
+  if(!dmCurrent(gen, uid) || tseq !== dm.threadSeq || !dm.active || dm.active.id !== conv.id || res.error) return;
+  const have = new Set(dm.msgs.map(m => m.id));
+  (res.data || []).map(dmNormRow).forEach(r => {
+    if(have.has(r.id)){ const e = dm.msgs.find(m => m.id === r.id); if(e && e.local) Object.assign(e, r, { local:false, status:"sent", error:"" }); }
+    else dm.msgs.push(r);
+  });
+  dmSortMsgs(); dmRenderMessages(false); dmMarkReadSoon();
+}
+function dmMarkReadSoon(){
+  clearTimeout(dm.markTimer);
+  dm.markTimer = setTimeout(async () => {
+    const conv = dm.active; if(!conv || !authUser || !dmVisible() || p2IsOffline()) return;
+    const upTo = dmMaxSeq(); if(!upTo) return;
+    const gen = dmGen, uid = authUser.id;
+    let res;
+    try { res = await p2WithTimeout(sb.rpc("dm_mark_read", { conv:conv.id, up_to:upTo }), 10000); } catch(e){ return; }
+    if(!dmCurrent(gen, uid) || res.error) return;
+    conv.unread = 0; dmUpdateBadge(); dmRefreshList();
+  }, 300);
+}
+
+// ---------- sending ----------
+async function dmFetchMessageById(convId, id){
+  try {
+    const res = await p2WithTimeout(sb.from("dm_messages").select(DM_MSG_COLS).eq("id", id).maybeSingle(), 8000);
+    return (!res.error && res.data && res.data.conversation_id === convId) ? dmNormRow(res.data) : null;
+  } catch(e){ return null; }
+}
+function dmApplyServerRow(msg, row){
+  const dup = dm.msgs.find(m => m !== msg && m.id === row.id);       // Realtime may have delivered it first
+  if(dup) dm.msgs = dm.msgs.filter(m => m !== msg);
+  Object.assign(dup || msg, row, { local:false, status:"sent", error:"" });
+  if(dm.active && dm.active.iAmLow === undefined) dm.active.iAmLow = row.from_low;      // my own message tells me which side I am
+  dmSortMsgs();
+}
+async function dmSend(retry){
+  const conv = dm.active; if(!conv || !authUser || dm.main.kind !== "thread") return;
+  if(dm.sending) return;
+  if(p2IsOffline()){ toast("You're offline. Sending needs a connection."); dmRenderComposer(); return; }
+  if(conv.blockedByMe) return;
+  let msg;
+  if(retry){ msg = retry; msg.status = "sending"; msg.error = ""; }
+  else {
+    const ta = dm.ui && dm.ui.ta; if(!ta) return;
+    const body = String(ta.value).replace(/^\s+|\s+$/g, "");
+    if(!body) return;
+    if(body.length > DM_MAX_LEN){ toast("Messages can be up to " + DM_MAX_LEN + " characters."); return; }
+    if(Date.now() - dm.lastSendAt < DM_MIN_GAP_MS){ toast("Please wait a moment before sending again."); return; }   // blocks rapid repeated submissions
+    msg = { id:p2Uuid(), conversation_id:conv.id, body, status:"sending", local:true, seq:null, from_low:null, created_at:new Date().toISOString(), retryable:true, error:"" };
+    dm.msgs.push(msg); dmSortMsgs(); ta.value = ""; dmAutosize();
+  }
+  dm.lastSendAt = Date.now(); dm.sending = true;
+  const gen = dmGen, uid = authUser.id, convId = conv.id;
+  dmRenderMessages(true); dmRenderComposer();
+  let row = null, err = null;
+  try {
+    const res = await p2WithTimeout(sb.from("dm_messages").insert({ id:msg.id, conversation_id:convId, body:msg.body }).select(DM_MSG_COLS).single(), 15000);
+    if(res.error) err = res.error; else row = dmNormRow(res.data);
+  } catch(e){ err = e; }
+  if(!dmCurrent(gen, uid)) return;                                      // account changed meanwhile: forget everything
+  if(err){
+    const ambiguous = String(err.code || "") === "23505" || p2IsNetworkError(err) || (err && err.name === "p2Timeout");
+    if(ambiguous) row = await dmFetchMessageById(convId, msg.id);       // it may have been stored even though the reply was lost
+    if(!dmCurrent(gen, uid)) return;
+  }
+  dm.sending = false;
+  if(row){
+    dmApplyServerRow(msg, row);
+    const c = dm.convs.find(x => x.id === convId);
+    if(c){ c.lastBody = row.body.slice(0, 120); c.lastAt = row.created_at; c.lastFromMe = true; dm.convs.sort((a, b) => String(b.lastAt).localeCompare(String(a.lastAt))); }
+    else if(dm.active && dm.active.id === convId){ dm.convs.unshift(dm.active); dm.active.lastBody = row.body.slice(0, 120); dm.active.lastAt = row.created_at; dm.active.lastFromMe = true; dm.active.unread = 0; }
+  } else {
+    msg.status = "failed";
+    const text = dmErrorText(err, "Couldn't send this message.");
+    msg.error = text;
+    msg.retryable = !/isn't possible|limit/.test(text) || /too fast/.test(text);
+    if(err && String(err.code) === "23514") { msg.error = "That message can't be sent (empty or too long)."; msg.retryable = false; }
+  }
+  dmRenderMessages(true); dmRenderComposer(); dmUpdateBadge(); dmRefreshList();
+}
+function dmAutosize(){ const ta = dm.ui && dm.ui.ta; if(!ta) return; ta.style.height = "auto"; ta.style.height = Math.min(ta.scrollHeight || 0, 140) + "px"; if(dm.ui.count) dm.ui.count.textContent = ta.value.length > 1700 ? ta.value.length + "/" + DM_MAX_LEN : ""; }
+
+// ---------- actions ----------
+function dmOpenConv(conv){
+  dm.active = conv; dm.main = { kind:"thread" }; dm.msgs = []; dm.threadState = "loading"; dm.loadingMore = false; dm.sending = false;
+  dmRenderAll(); dmLoadThread();
+}
+function dmCloseMain(){ dm.main = { kind:"none" }; dm.active = null; dm.msgs = []; dm.ui = null; dmRenderAll(); }
+async function dmMessagePerson(person){
+  if(!authUser) return;
+  if(p2IsOffline()){ toast("Starting a conversation needs a connection."); return; }
+  const gen = dmGen, uid = authUser.id;
+  let res;
+  try { res = await p2WithTimeout(sb.rpc("dm_start_conversation", { peer_public_id:person.public_id }), 15000); } catch(e){ res = { error:e }; }
+  if(!dmCurrent(gen, uid)) return;
+  if(res.error){
+    if(/DM_NEEDS_PROFILE/.test(String(res.error.message))){ dm.side = "profile"; dmRenderAll(); }
+    toast(dmErrorText(res.error, "Couldn't start the conversation.")); return;
+  }
+  const id = res.data;
+  const existing = dm.convs.find(c => c.id === id);
+  const conv = existing || { id, peerPid:person.public_id, peerName:person.display_name, lastBody:"", lastAt:null, lastFromMe:false, unread:0, blockedByMe:false, iAmLow:undefined };
+  dm.side = "list"; dmOpenConv(conv);
+}
+async function dmBlock(pid, name){
+  if(!window.confirm("Block " + name + "? They won't be able to message you or find you in the directory. You can unblock them under Messages > Blocked.")) return;
+  if(p2IsOffline()){ toast("Blocking needs a connection."); return; }
+  const gen = dmGen, uid = authUser.id;
+  let res; try { res = await p2WithTimeout(sb.rpc("dm_block_user", { peer_public_id:pid }), 15000); } catch(e){ res = { error:e }; }
+  if(!dmCurrent(gen, uid)) return;
+  if(res.error){ toast(dmErrorText(res.error, "Couldn't block this person.")); return; }
+  dm.convs.forEach(c => { if(c.peerPid === pid) c.blockedByMe = true; });
+  if(dm.active && dm.active.peerPid === pid) dm.active.blockedByMe = true;
+  dm.people = dm.people.filter(p => p.public_id !== pid);
+  if(dm.main.kind === "person") dm.main = { kind:"none" };
+  dm.blockedState = "idle";
+  toast(name + " is blocked."); dmRenderAll();
+}
+async function dmUnblock(pid, name){
+  if(p2IsOffline()){ toast("Unblocking needs a connection."); return; }
+  const gen = dmGen, uid = authUser.id;
+  let res; try { res = await p2WithTimeout(sb.rpc("dm_unblock_user", { peer_public_id:pid }), 15000); } catch(e){ res = { error:e }; }
+  if(!dmCurrent(gen, uid)) return;
+  if(res.error){ toast(dmErrorText(res.error, "Couldn't unblock this person.")); return; }
+  dm.convs.forEach(c => { if(c.peerPid === pid) c.blockedByMe = false; });
+  if(dm.active && dm.active.peerPid === pid) dm.active.blockedByMe = false;
+  dm.blocked = dm.blocked.filter(b => b.public_id !== pid);
+  toast(name + " is unblocked."); dmRenderAll();
+}
+async function dmClearConversation(conv){
+  if(!window.confirm("Delete this conversation for you? The other person keeps their copy, and it will reappear if they message you again.")) return;
+  if(p2IsOffline()){ toast("Deleting needs a connection."); return; }
+  const gen = dmGen, uid = authUser.id;
+  let res; try { res = await p2WithTimeout(sb.rpc("dm_clear_conversation", { conv:conv.id }), 15000); } catch(e){ res = { error:e }; }
+  if(!dmCurrent(gen, uid)) return;
+  if(res.error){ toast(dmErrorText(res.error, "Couldn't delete the conversation.")); return; }
+  dm.convs = dm.convs.filter(c => c.id !== conv.id);
+  dmCloseMain(); toast("Conversation deleted for you.");
+}
+function dmOpenReport(ctx){ dm.main = { kind:"report", report:ctx, back:dm.main }; dmRenderAll(); }
+async function dmSubmitReport(ctx, reason, details){
+  if(p2IsOffline()){ toast("Reporting needs a connection."); return; }
+  const gen = dmGen, uid = authUser.id;
+  let res;
+  try { res = await p2WithTimeout(sb.rpc("dm_report", { peer_public_id:ctx.pid, msg_id:ctx.msgId || null, why:reason, detail_text:details || null }), 15000); } catch(e){ res = { error:e }; }
+  if(!dmCurrent(gen, uid)) return;
+  if(res.error){ toast(dmErrorText(res.error, "Couldn't send the report.")); return; }
+  toast("Report sent to the app owner. It is not reviewed automatically.");
+  dm.main = (dm.main.back && dm.main.back.kind !== "report") ? dm.main.back : { kind:"none" };
+  dmRenderAll();
+}
+async function dmSaveProfile(form){
+  if(dm.saving || !authUser) return;
+  const name = form.name.value.replace(/^\s+|\s+$/g, "");
+  if(!name || name.length > 40 || name.indexOf("@") >= 0){ toast("Choose a public name of 1-40 characters. Don't use an email address (no @)."); return; }
+  const local = String(authUser.email || "").split("@")[0].toLowerCase();
+  if(local && name.toLowerCase() === local && !window.confirm("This looks like the first part of your email address. It will be visible to other members. Use it anyway?")) return;
+  if(p2IsOffline()){ toast("Saving needs a connection."); return; }
+  const payload = { display_name:name, bio:form.bio.value.replace(/^\s+|\s+$/g, "") || null, interests:form.interests(), discoverable:!!form.discoverable.checked, allow_messages:!!form.allow.checked };
+  dm.saving = true; form.saveBtn.disabled = true;
+  const gen = dmGen, uid = authUser.id, hadProfile = !!dm.profile;
+  let res;
+  try {
+    res = await p2WithTimeout(hadProfile ? sb.from("chat_profiles").update(payload).eq("user_id", uid).select(DM_PROFILE_COLS).single()
+                                         : sb.from("chat_profiles").insert(payload).select(DM_PROFILE_COLS).single(), 15000);
+  } catch(e){ res = { error:e }; }
+  if(!dmCurrent(gen, uid)) return;
+  dm.saving = false;
+  if(res.error){
+    form.saveBtn.disabled = false;
+    toast(String(res.error.code) === "23514" ? "Check your details: name 1-40 characters without @, bio up to 160, up to 6 interests." : dmErrorText(res.error, "Couldn't save your profile."));
+    return;
+  }
+  dm.profile = res.data; dm.profileState = "ready"; dm.peopleState = "idle";
+  toast(payload.discoverable ? "Saved. Others can now find and message you." : "Saved. You are not listed in the directory.");
+  dm.side = "list"; dmRenderAll();
+}
+
+// ---------- people directory ----------
+async function dmSearchPeople(reset){
+  if(!authUser || !dm.profile) return;
+  // Duplicate guard: while a request is running, ignore "show more", and ignore a new search for the very same text.
+  // A search for different text replaces the running one (its late answer is dropped below).
+  const busy = dm.peopleBusy;
+  if(busy && (!reset || (busy.reset && busy.q === dm.peopleQ))) return;
+  if(p2IsOffline()){ dm.peopleBusy = null; dm.peopleState = "error"; dm.peopleErr = "Searching needs a connection."; dmRenderPeopleResults(); return; }
+  const gen = dmGen, uid = authUser.id, q = dm.peopleQ, seq = ++dm.peopleSeq;
+  if(reset && dm.peopleResultsQ !== q){ dm.people = []; dm.peopleEnd = false; }     // never show results for different text while searching
+  const last = (!reset && dm.people.length) ? dm.people[dm.people.length - 1] : null;
+  dm.peopleBusy = { q, reset:!!reset }; dm.peopleState = "loading"; dmRenderPeopleResults();
+  let res;
+  try { res = await p2WithTimeout(sb.rpc("dm_search_profiles", { q, lim:DM_SEARCH_PAGE, after_name:last ? last.display_name : null, after_pid:last ? last.public_id : null }), 15000); }
+  catch(e){ res = { error:e }; }
+  if(!dmCurrent(gen, uid) || seq !== dm.peopleSeq) return;                         // superseded by a newer search, or account changed
+  dm.peopleBusy = null;
+  if(res.error){ dm.peopleState = "error"; dm.peopleErr = dmErrorText(res.error, "Couldn't load people."); if(reset){ dm.people = []; dm.peopleResultsQ = null; } }
+  else {
+    const rows = (res.data || []).map(r => ({ public_id:r.public_id, display_name:r.display_name, bio:r.bio, interests:r.interests || [] }));
+    if(reset) dm.people = rows;                                                    // replace: a fresh look at the directory
+    else rows.forEach(r => { if(!dm.people.some(p => p.public_id === r.public_id)) dm.people.push(r); });
+    dm.peopleEnd = (res.data || []).length < DM_SEARCH_PAGE; dm.peopleResultsQ = q; dm.peopleState = "ready";
+  }
+  dmRenderPeopleResults();
+}
+async function dmLoadBlocked(){
+  if(!authUser) return;
+  const gen = dmGen, uid = authUser.id;
+  dm.blockedState = "loading"; dmRenderSide();
+  let res; try { res = await p2WithTimeout(sb.rpc("dm_list_blocked"), 15000); } catch(e){ res = { error:e }; }
+  if(!dmCurrent(gen, uid)) return;
+  if(res.error){ dm.blockedState = "error"; } else { dm.blocked = res.data || []; dm.blockedState = "ready"; }
+  if(dm.side === "blocked") dmRenderSide();
+}
+function dmSetSide(side){
+  dm.side = side;
+  if(side === "list") dmLoadConversations();
+  if(side === "people" && dm.profile) dmSearchPeople(true);       // fresh list on every visit (a no-op if one is already running)
+  if(side === "blocked") dmLoadBlocked();
+  if(side === "profile" || side === "people") dmLoadProfile();
+  dmRenderAll();
+}
+
+// ---------- rendering ----------
+function dmUpdateBadge(){
+  const b = document.getElementById("dm-home-badge"); if(!b) return;
+  const n = authUser ? dmUnreadTotal() : 0;
+  b.textContent = n > 99 ? "99+" : String(n);
+  b.style.display = n > 0 ? "inline-block" : "none";
+}
+function dmRenderAll(){ dmRenderBanner(); dmRenderTabs(); dmRenderSide(); dmRenderMain(); dmApplyLayout(); dmUpdateBadge(); }
+function dmApplyLayout(){ const w = document.getElementById("dm-wrap"); if(w) w.classList.toggle("dm-has-main", dm.main.kind !== "none"); }
+function dmRenderBanner(){
+  const el = document.getElementById("dm-banner"); if(!el) return;
+  let text = "";
+  if(authUser && p2IsOffline()) text = "You're offline. You can read what's already loaded, but sending and new messages need a connection.";
+  else if(authUser && dm.started && dm.chanState && dm.chanState !== "SUBSCRIBED") text = "Reconnecting... new messages may be delayed.";
+  el.textContent = text; el.style.display = text ? "block" : "none";
+}
+function dmRenderTabs(){
+  const t = document.getElementById("dm-tabs"); if(!t) return;
+  t.textContent = "";
+  if(!authUser) return;
+  [["list", "Chats"], ["people", "People"], ["profile", "My profile"], ["blocked", "Blocked"]].forEach(([k, label]) => {
+    const b = dmBtn(label, "btn-secondary dm-tab" + (dm.side === k ? " dm-tab-on" : ""), () => dmSetSide(k));
+    b.setAttribute("aria-pressed", dm.side === k ? "true" : "false");
+    if(k === "list"){ const n = dmUnreadTotal(); if(n > 0){ const bd = dmEl("span", "dm-badge", n > 99 ? "99+" : n); b.appendChild(bd); } }
+    t.appendChild(b);
+  });
+}
+function dmRefreshList(){ if(dm.side === "list") dmRenderSide(); dmRenderTabs(); }
+function dmRenderSide(){
+  const body = document.getElementById("dm-side-body"); if(!body) return;
+  body.textContent = ""; dm.sideUi = null;
+  if(!authUser){ body.appendChild(dmEl("div", "empty-state", "Log in to use Messages.")); return; }
+  if(dm.side === "people") return dmRenderPeople(body);
+  if(dm.side === "profile") return dmRenderProfileForm(body);
+  if(dm.side === "blocked") return dmRenderBlocked(body);
+  dmRenderConvList(body);
+}
+function dmRenderConvList(body){
+  if(dm.convState === "loading" || dm.convState === "idle"){ body.appendChild(dmEl("div", "empty-state", p2IsOffline() ? "You're offline." : "Loading conversations...")); return; }
+  if(dm.convState === "error"){
+    body.appendChild(dmEl("div", "empty-state", "Couldn't load your conversations."));
+    body.appendChild(dmBtn("Try again", "btn-secondary", () => dmLoadConversations())); return;
+  }
+  if(!dm.convs.length){
+    body.appendChild(dmEl("div", "empty-state", "No conversations yet."));
+    body.appendChild(dmBtn("Find people to message", "btn-primary", () => dmSetSide("people"))); return;
+  }
+  dm.convs.forEach(c => {
+    const b = dmEl("button", "dm-conv" + (dm.active && dm.active.id === c.id ? " dm-conv-on" : ""));
+    b.type = "button"; b.onclick = () => dmOpenConv(c);
+    b.appendChild(dmAvatar(c.peerName));
+    const mid = dmEl("span", "dm-conv-mid");
+    mid.appendChild(dmEl("span", "dm-conv-name", c.peerName));
+    mid.appendChild(dmEl("span", "dm-conv-prev", (c.lastFromMe ? "You: " : "") + c.lastBody));
+    b.appendChild(mid);
+    const right = dmEl("span", "dm-conv-right");
+    right.appendChild(dmEl("span", "dm-conv-time", dmFmtListTime(c.lastAt)));
+    if(c.unread > 0){ const u = dmEl("span", "dm-badge", c.unread > 99 ? "99+" : c.unread); u.setAttribute("aria-label", c.unread + " unread"); right.appendChild(u); }
+    b.appendChild(right);
+    body.appendChild(b);
+  });
+}
+function dmNeedProfileCta(body, text){
+  body.appendChild(dmEl("div", "empty-state", text));
+  body.appendChild(dmBtn("Set up my chat profile", "btn-primary", () => dmSetSide("profile")));
+}
+function dmRenderPeople(body){
+  if(dm.profileState !== "ready" && !dm.profile){ body.appendChild(dmEl("div", "empty-state", dm.profileState === "error" ? "Couldn't check your chat profile." : "Loading...")); return; }
+  if(!dm.profile){ dmNeedProfileCta(body, "Create your chat profile to find people and message them."); return; }
+  const inp = dmEl("input"); inp.type = "search"; inp.className = "dm-search"; inp.placeholder = "Search by name"; inp.maxLength = 40; inp.value = dm.peopleQ;
+  inp.setAttribute("aria-label", "Search people by name"); inp.autocomplete = "off";
+  inp.oninput = () => { dm.peopleQ = inp.value; clearTimeout(dm.searchTimer); dm.searchTimer = setTimeout(() => dmSearchPeople(true), 300); };
+  body.appendChild(inp);
+  if(!dm.profile.discoverable) body.appendChild(dmEl("div", "hint", "You're not listed in the directory, so others can't find you. You can change that under My profile."));
+  const results = dmEl("div", "dm-results"); body.appendChild(results);
+  dm.sideUi = { results };
+  dmRenderPeopleResults();
+}
+function dmRenderPeopleResults(){
+  if(dm.side !== "people") return;
+  if(!dm.sideUi){ if(dm.profile) dmRenderSide(); return; }      // the People view was not drawn yet (the profile arrived late): draw it first
+  const box = dm.sideUi.results; box.textContent = "";
+  if(dm.peopleState === "idle"){ return; }
+  dm.people.forEach(p => {
+    const b = dmEl("button", "dm-conv"); b.type = "button";
+    b.onclick = () => { dm.main = { kind:"person", person:p }; dm.active = null; dmRenderAll(); };
+    b.appendChild(dmAvatar(p.display_name));
+    const mid = dmEl("span", "dm-conv-mid");
+    mid.appendChild(dmEl("span", "dm-conv-name", p.display_name));
+    if(p.bio) mid.appendChild(dmEl("span", "dm-conv-prev", p.bio));
+    b.appendChild(mid); box.appendChild(b);
+  });
+  if(dm.peopleState === "loading") box.appendChild(dmEl("div", "empty-state", "Searching..."));
+  else if(dm.peopleState === "error"){ box.appendChild(dmEl("div", "empty-state", dm.peopleErr || "Couldn't load people.")); box.appendChild(dmBtn("Try again", "btn-secondary", () => dmSearchPeople(true))); }
+  else if(!dm.people.length){
+    box.appendChild(dmEl("div", "empty-state", dm.peopleQ ? "No one found with that name." : "No one is listed in the directory yet. People appear here after they switch on \"Let others find and message me\" in My profile."));
+    box.appendChild(dmBtn("Refresh", "btn-secondary", () => dmSearchPeople(true)));
+  }
+  else if(!dm.peopleEnd) box.appendChild(dmBtn("Show more", "btn-secondary", () => dmSearchPeople(false)));
+}
+function dmRenderBlocked(body){
+  if(dm.blockedState === "idle" || dm.blockedState === "loading"){ body.appendChild(dmEl("div", "empty-state", "Loading...")); return; }
+  if(dm.blockedState === "error"){ body.appendChild(dmEl("div", "empty-state", "Couldn't load your blocked list.")); body.appendChild(dmBtn("Try again", "btn-secondary", dmLoadBlocked)); return; }
+  if(!dm.blocked.length){ body.appendChild(dmEl("div", "empty-state", "You haven't blocked anyone.")); return; }
+  body.appendChild(dmEl("div", "hint", "Blocked people can't message you or find you in the directory."));
+  dm.blocked.forEach(b => {
+    const row = dmEl("div", "dm-conv dm-static");
+    row.appendChild(dmAvatar(b.display_name));
+    const mid = dmEl("span", "dm-conv-mid"); mid.appendChild(dmEl("span", "dm-conv-name", b.display_name)); row.appendChild(mid);
+    row.appendChild(dmBtn("Unblock", "btn-secondary", () => dmUnblock(b.public_id, b.display_name)));
+    body.appendChild(row);
+  });
+}
+function dmRenderProfileForm(body){
+  if(dm.profileState === "idle"){ body.appendChild(dmEl("div", "empty-state", "Loading...")); return; }
+  if(dm.profileState === "error" && !dm.profile){ body.appendChild(dmEl("div", "empty-state", "Couldn't load your chat profile.")); body.appendChild(dmBtn("Try again", "btn-secondary", dmLoadProfile)); return; }
+  const p = dm.profile;
+  body.appendChild(dmEl("h3", "", p ? "Your chat profile" : "Create your chat profile"));
+  body.appendChild(dmEl("div", "hint", "Other signed-in members can see your name, bio and interests if you choose to be listed. Never put your email, phone number or address here. Your health details and routines are never shared."));
+  const name = dmEl("input"); name.type = "text"; name.maxLength = 40; name.className = "dm-search"; name.placeholder = "Public name (not your email)"; name.value = p ? p.display_name : "";
+  name.setAttribute("aria-label", "Public name");
+  const bio = dmEl("textarea"); bio.rows = 3; bio.maxLength = 160; bio.placeholder = "Short bio (optional, up to 160 characters)"; bio.value = p && p.bio ? p.bio : "";
+  bio.setAttribute("aria-label", "Short bio");
+  body.appendChild(dmEl("div", "section-label", "Name")); body.appendChild(name);
+  body.appendChild(dmEl("div", "section-label", "Bio")); body.appendChild(bio);
+  body.appendChild(dmEl("div", "section-label", "Interests (up to 6)"));
+  const grid = dmEl("div", "checkbox-grid"); const boxes = [];
+  const chosen = new Set(p ? p.interests : []);
+  GOALS_LIST.filter(x => x !== "Other").forEach(g => {
+    const lab = dmEl("label", "checkbox-item"); const cb = dmEl("input"); cb.type = "checkbox"; cb.value = g; cb.checked = chosen.has(g);
+    cb.onchange = () => { const n = boxes.filter(b => b.checked).length; boxes.forEach(b => { if(!b.checked) b.disabled = n >= 6; }); };
+    boxes.push(cb); lab.appendChild(cb); lab.appendChild(dmEl("span", "", g)); grid.appendChild(lab);
+  });
+  body.appendChild(grid);
+  const mk = (text, on) => { const lab = dmEl("label", "checkbox-item dm-toggle"); const cb = dmEl("input"); cb.type = "checkbox"; cb.checked = on; lab.appendChild(cb); lab.appendChild(dmEl("span", "", text)); body.appendChild(lab); return cb; };
+  body.appendChild(dmEl("div", "section-label", "Visibility"));
+  const disc = mk("Let others find and message me", p ? !!p.discoverable : false);
+  const allow = mk("Accept new conversations from people who find me", p ? !!p.allow_messages : true);
+  const save = dmBtn("Save profile", "btn-primary", () => dmSaveProfile(form));
+  const form = { name, bio, discoverable:disc, allow, saveBtn:save, interests:() => boxes.filter(b => b.checked).map(b => b.value).slice(0, 6) };
+  const row = dmEl("div", "nav-row"); row.appendChild(save); body.appendChild(row);
+}
+function dmRenderMain(){
+  const main = document.getElementById("dm-main"); if(!main) return;
+  main.textContent = ""; dm.ui = null;
+  if(!authUser) return;
+  const k = dm.main.kind;
+  if(k === "thread" && dm.active) return dmRenderThread(main);
+  if(k === "person") return dmRenderPerson(main);
+  if(k === "report") return dmRenderReport(main);
+  main.appendChild(dmEl("div", "empty-state", "Select a conversation, or find people under People."));
+}
+function dmMainBack(){ return dmBtn("‹ Back", "btn-secondary dm-mainback", () => { if(dm.main.kind === "report" && dm.main.back) { dm.main = dm.main.back; dmRenderAll(); } else dmCloseMain(); }); }
+function dmRenderThread(main){
+  const conv = dm.active;
+  const head = dmEl("div", "dm-head");
+  head.appendChild(dmMainBack()); head.appendChild(dmAvatar(conv.peerName)); head.appendChild(dmEl("span", "dm-head-name", conv.peerName));
+  const acts = dmEl("span", "dm-head-actions");
+  acts.appendChild(dmBtn("Report", "dm-link", () => dmOpenReport({ pid:conv.peerPid, name:conv.peerName, msgId:null })));
+  acts.appendChild(conv.blockedByMe ? dmBtn("Unblock", "dm-link", () => dmUnblock(conv.peerPid, conv.peerName)) : dmBtn("Block", "dm-link", () => dmBlock(conv.peerPid, conv.peerName)));
+  acts.appendChild(dmBtn("Delete", "dm-link", () => dmClearConversation(conv)));
+  head.appendChild(acts); main.appendChild(head);
+  const list = dmEl("div", "dm-msgs"); list.setAttribute("role", "log"); list.setAttribute("aria-live", "polite"); main.appendChild(list);
+  const notice = dmEl("div", "dm-notice"); notice.style.display = "none"; main.appendChild(notice);
+  const box = dmEl("div", "dm-composer");
+  const ta = dmEl("textarea"); ta.rows = 1; ta.maxLength = DM_MAX_LEN; ta.placeholder = "Write a message"; ta.setAttribute("aria-label", "Message");
+  ta.addEventListener("keydown", e => { if(e.key === "Enter" && !e.shiftKey && !e.isComposing){ e.preventDefault(); dmSend(); } });
+  ta.addEventListener("input", dmAutosize);
+  const send = dmBtn("Send", "btn-primary", () => dmSend());
+  const count = dmEl("span", "dm-count");
+  box.appendChild(ta); box.appendChild(send); main.appendChild(box); main.appendChild(count);
+  dm.ui = { list, notice, box, ta, send, count };
+  dmRenderMessages(true); dmRenderComposer();
+}
+function dmRenderMessages(stick){
+  if(!dm.ui || !dm.active) return;
+  const list = dm.ui.list, conv = dm.active;
+  const near = (list.scrollHeight || 0) - (list.scrollTop || 0) - (list.clientHeight || 0) < 80;
+  list.textContent = "";
+  if(dm.threadState === "loading" && !dm.msgs.length){ list.appendChild(dmEl("div", "empty-state", "Loading messages...")); return; }
+  if(dm.threadState === "error" && !dm.msgs.length){ list.appendChild(dmEl("div", "empty-state", "Couldn't load this conversation.")); list.appendChild(dmBtn("Try again", "btn-secondary", dmLoadThread)); return; }
+  if(dm.hasMore) list.appendChild(dmBtn(dm.loadingMore ? "Loading..." : "Load earlier messages", "btn-secondary dm-more", () => dmLoadEarlier()));
+  if(!dm.msgs.length){ list.appendChild(dmEl("div", "empty-state", "No messages yet. Say hello!")); return; }
+  let lastDay = "";
+  dm.msgs.forEach(m => {
+    const day = dmDayLabel(m.created_at);
+    if(day && day !== lastDay){ list.appendChild(dmEl("div", "dm-day", day)); lastDay = day; }
+    const mine = !!m.local || (conv.iAmLow !== undefined && m.from_low === conv.iAmLow);
+    const row = dmEl("div", "dm-row " + (mine ? "dm-mine" : "dm-theirs") + (m.status === "sending" ? " dm-sending" : "") + (m.status === "failed" ? " dm-failed" : ""));
+    row.appendChild(dmEl("div", "dm-bubble", m.body));
+    const meta = dmEl("div", "dm-meta");
+    meta.appendChild(dmEl("span", "", m.status === "sending" ? "Sending..." : (m.status === "failed" ? "Not sent" : dmFmtTime(m.created_at))));
+    if(m.status === "failed"){
+      meta.appendChild(dmEl("span", "dm-err", " " + m.error));
+      if(m.retryable) meta.appendChild(dmBtn("Retry", "dm-link", () => dmSend(m)));
+      meta.appendChild(dmBtn("Dismiss", "dm-link", () => { dm.msgs = dm.msgs.filter(x => x !== m); dmRenderMessages(false); }));
+    } else if(!mine){
+      meta.appendChild(dmBtn("Report", "dm-link", () => dmOpenReport({ pid:conv.peerPid, name:conv.peerName, msgId:m.id })));
+    }
+    row.appendChild(meta); list.appendChild(row);
+  });
+  if(stick || near) list.scrollTop = list.scrollHeight;
+}
+function dmRenderComposer(){
+  if(!dm.ui || !dm.active) return;
+  const { notice, box, ta, send } = dm.ui, conv = dm.active;
+  notice.textContent = ""; notice.style.display = "none";
+  const offline = p2IsOffline();
+  if(conv.blockedByMe){
+    box.style.display = "none"; notice.style.display = "block";
+    notice.appendChild(dmEl("span", "", "You blocked " + conv.peerName + ". Unblock to send messages. "));
+    notice.appendChild(dmBtn("Unblock", "dm-link", () => dmUnblock(conv.peerPid, conv.peerName)));
+    return;
+  }
+  box.style.display = "";
+  ta.disabled = offline;
+  send.disabled = offline || dm.sending;
+  send.textContent = dm.sending ? "Sending..." : "Send";
+  if(offline){ notice.style.display = "block"; notice.textContent = "You're offline. Sending needs a connection - your message isn't sent until you're back online."; }
+}
+function dmRenderPerson(main){
+  const p = dm.main.person; if(!p) return;
+  const head = dmEl("div", "dm-head"); head.appendChild(dmMainBack()); main.appendChild(head);
+  const card = dmEl("div", "dm-person");
+  card.appendChild(dmAvatar(p.display_name, true));
+  card.appendChild(dmEl("h2", "", p.display_name));
+  if(p.bio) card.appendChild(dmEl("p", "dm-bio", p.bio));
+  if(p.interests && p.interests.length){ const chips = dmEl("div", "dm-chips"); p.interests.forEach(i => chips.appendChild(dmEl("span", "tag", i))); card.appendChild(chips); }
+  const row = dmEl("div", "nav-row");
+  row.appendChild(dmBtn("Message", "btn-primary", () => dmMessagePerson(p)));
+  row.appendChild(dmBtn("Block", "btn-secondary", () => dmBlock(p.public_id, p.display_name)));
+  row.appendChild(dmBtn("Report", "btn-secondary", () => dmOpenReport({ pid:p.public_id, name:p.display_name, msgId:null })));
+  card.appendChild(row); main.appendChild(card);
+}
+function dmRenderReport(main){
+  const ctx = dm.main.report; if(!ctx) return;
+  const head = dmEl("div", "dm-head"); head.appendChild(dmMainBack()); main.appendChild(head);
+  const card = dmEl("div", "dm-person");
+  card.appendChild(dmEl("h2", "", "Report " + ctx.name));
+  if(ctx.msgId && ctx.excerpt) { /* excerpt shown below, as text */ }
+  card.appendChild(dmEl("div", "hint", ctx.msgId ? "You are reporting one message from this person." : "You are reporting this person."));
+  card.appendChild(dmEl("div", "dm-note", DM_REPORT_NOTE));
+  const sel = dmEl("select", "select-input"); sel.setAttribute("aria-label", "Reason");
+  DM_REASONS.forEach(([v, label]) => { const o = dmEl("option", "", label); o.value = v; sel.appendChild(o); });
+  const det = dmEl("textarea"); det.rows = 3; det.maxLength = 500; det.placeholder = "Anything we should know? (optional)"; det.setAttribute("aria-label", "Details");
+  card.appendChild(dmEl("div", "section-label", "Reason")); card.appendChild(sel);
+  card.appendChild(dmEl("div", "section-label", "Details")); card.appendChild(det);
+  const row = dmEl("div", "nav-row");
+  const go = dmBtn("Send report", "btn-primary", async () => { go.disabled = true; await dmSubmitReport(ctx, sel.value, det.value.replace(/^\s+|\s+$/g, "")); go.disabled = false; });
+  row.appendChild(go); row.appendChild(dmBtn("Cancel", "btn-secondary", () => { dm.main = (dm.main.back && dm.main.back.kind !== "report") ? dm.main.back : { kind:"none" }; dmRenderAll(); }));
+  card.appendChild(row); main.appendChild(card);
+}
+
+// ---------- entry points ----------
+window.showMessages = function(){
+  if(!authUser){ toast("Log in to use Messages."); return; }
+  goToScreen("messages");
+  dmEnsureStarted();
+  dmRenderAll();
+  if(dm.started){ dmCatchUp(); if(dm.profileState !== "ready") dmLoadProfile(); }
+  dmMarkReadSoon();
+};
+window.dmBack = function(){
+  if(dmIsMobile() && dm.main.kind !== "none"){ if(dm.main.kind === "report" && dm.main.back){ dm.main = dm.main.back; dmRenderAll(); } else dmCloseMain(); return; }
+  goToScreen("home");
+};
+window.addEventListener("online", dmOnline);
+window.addEventListener("offline", dmOnOffline);
+document.addEventListener("visibilitychange", () => { if(document.visibilityState === "visible" && authUser && dm.started){ dmCatchUp(); dmMarkReadSoon(); if(!dm.channel) dmStartRealtime(); } });
 
 // ---------- post-session insight ----------
 function buildInsightFacts(saved, result, prev){
