@@ -515,6 +515,99 @@
     .dm-row { max-width:88%; }
     .dm-msgs { max-height:50vh; }
   }
+  /* ===== Dashboard (signed-in home) ===== */
+  .db { display:none; --db-top:68px; }
+  body.is-auth .db { display:grid; grid-template-columns:230px minmax(0,1fr); align-items:start; min-height:calc(100vh - var(--db-top)); }
+  body.is-auth.db-off .db { display:none; }
+  body.is-auth:not(.db-off) #home-screen > section:not(#explore), body.is-auth:not(.db-off) #home-screen > footer { display:none; }
+  body.is-auth:not(.db-off) .ya-links { display:none; }
+  .db-side { position:sticky; top:var(--db-top); height:calc(100vh - var(--db-top)); overflow-y:auto; padding:20px 12px; background:rgba(13,21,17,.94); border-right:1px solid var(--border); }
+  .db-group { margin-bottom:10px; }
+  .db-group-label { font-size:.66rem; letter-spacing:.14em; text-transform:uppercase; color:var(--text-dim); padding:0 12px; margin:8px 0 6px; }
+  .db-nav-btn { display:flex; align-items:center; gap:12px; width:100%; text-align:left; background:none; color:var(--text-dim); padding:10px 12px; border-radius:12px; font-size:.9rem; font-weight:500; }
+  .db-nav-btn svg { width:20px; height:20px; flex:none; }
+  .db-nav-btn:hover, .db-nav-btn.on { background:rgba(79,209,176,.12); color:var(--accent); opacity:1; }
+  .db-nav-btn .dm-badge { margin-left:auto; }
+  .db-main { min-width:0; padding:22px clamp(14px,2.5vw,38px) 44px; }
+  .db-hero { border:1px solid rgba(79,209,176,.18); border-radius:22px; padding:28px 30px; min-height:150px; background-color:#121b17; background-size:cover; background-position:center; margin-bottom:20px; }
+  .db-hero h1 { font-size:clamp(26px,3vw,38px); line-height:1.15; margin:0 0 8px; font-weight:650; overflow-wrap:anywhere; }
+  .db-hero-line { margin:0 0 14px; font-size:1.02rem; color:#cfe0d6; }
+  .db-chips, .db-meta { display:flex; flex-wrap:wrap; gap:8px; }
+  .db-grid { display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:20px; align-items:start; }
+  .db-col, .db-right { min-width:0; }
+  .db-quick { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:11px; margin-bottom:18px; }
+  .db-action { min-height:170px; border:1px solid var(--border); border-radius:17px; padding:16px; color:var(--text); text-align:left; display:flex; flex-direction:column; align-items:flex-start; transition:transform .2s, border-color .2s; font-weight:500; }
+  .db-action:hover { transform:translateY(-3px); border-color:var(--accent); opacity:1; }
+  .db-mint { background:linear-gradient(145deg,#1c5c4c,#122b23); } .db-blue { background:linear-gradient(145deg,#245d50,#142b23); }
+  .db-gold { background:linear-gradient(145deg,#72572b,#30281b); } .db-cyan { background:linear-gradient(145deg,#254b40,#14271f); }
+  .db-action-ico { width:46px; height:46px; border-radius:50%; background:rgba(255,255,255,.17); display:grid; place-items:center; margin-bottom:12px; }
+  .db-action-ico svg { width:22px; height:22px; }
+  .db-action strong { font-size:.95rem; line-height:1.3; margin-bottom:6px; font-weight:650; }
+  .db-desc { font-size:.76rem; color:#b7c9bf; font-weight:400; }
+  .db-arrow { margin-top:auto; padding-top:8px; font-size:1.3rem; }
+  .db-card { display:block; width:100%; text-align:left; color:var(--text); font-weight:400; box-shadow:0 12px 32px rgba(0,0,0,.14); background:linear-gradient(140deg,rgba(18,27,23,.95),rgba(15,22,18,.95)); border:1px solid var(--border); border-radius:17px; padding:18px; margin-bottom:17px; }
+  .db-card h2 { font-size:1.05rem; margin:0; }
+  .db-sub { color:var(--text-dim); font-size:.82rem; margin:2px 0 14px; }
+  .db-empty { color:var(--text-dim); font-size:.85rem; margin:8px 0 12px; }
+  .db-feature { display:grid; grid-template-columns:210px 1fr; gap:20px; align-items:start; }
+  .db-feature-img { width:100%; height:200px; border-radius:12px; background-color:#17231d; background-size:cover; background-position:center; }
+  .db-feature h3 { margin:0 0 6px; font-size:1.15rem; color:var(--text); }
+  .db-meta { margin:6px 0 10px; }
+  .db-note { color:#b8c7bf; font-size:.85rem; margin:0 0 10px; }
+  .db-steps { display:grid; gap:6px; margin:0 0 12px; }
+  .db-step { display:flex; align-items:center; gap:10px; background:#0f1612; border:1px solid var(--border); border-radius:10px; padding:7px 10px; font-size:.85rem; }
+  .db-step-n { color:var(--text-dim); font-size:.72rem; width:20px; flex:none; }
+  .db-step-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .db-step small { color:var(--text-dim); flex:none; }
+  .db-more { color:var(--text-dim); font-size:.78rem; padding-left:4px; }
+  .db-btnrow { display:flex; gap:9px; flex-wrap:wrap; }
+  .db-btn { border:1px solid var(--border); background:#17231d; color:var(--text); border-radius:11px; padding:9px 14px; font-size:.88rem; }
+  .db-btn-primary { border:0; background:linear-gradient(135deg,#4fd1b0,#2f9e86); color:#0a100d; font-weight:650; }
+  .db-link { background:none; color:var(--accent); padding:2px 4px; font-size:.8rem; font-weight:600; }
+  .db-why { margin-top:12px; font-size:.85rem; color:var(--text-dim); }
+  .db-why summary { cursor:pointer; color:var(--accent); font-weight:600; }
+  .db-why p { margin:8px 0 0; } .db-why-row { margin-top:8px; display:flex; flex-direction:column; gap:2px; } .db-why-row b { color:var(--text); font-weight:600; }
+  .db-tiles { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; margin-top:12px; }
+  .db-tile { display:flex; align-items:center; gap:10px; background:#0f1612; border:1px solid var(--border); border-radius:12px; padding:10px; text-align:left; color:var(--text); font-weight:500; min-width:0; }
+  .db-tile:hover { border-color:var(--accent); opacity:1; }
+  .db-tile-ico { flex:none; width:40px; height:40px; border-radius:50%; background:rgba(79,209,176,.12); color:var(--accent); display:grid; place-items:center; }
+  .db-tile-ico svg { width:20px; height:20px; }
+  .db-tile-text { min-width:0; display:flex; flex-direction:column; gap:2px; }
+  .db-tile-text strong { font-size:.85rem; font-weight:600; } .db-tile-text small { color:var(--text-dim); font-size:.72rem; font-weight:400; line-height:1.3; }
+  .db-side-card { padding:16px; }
+  .db-card-row { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:12px; }
+  .db-count { color:var(--text-dim); font-size:.8rem; }
+  .db-profile { display:flex; align-items:center; gap:11px; margin-bottom:10px; }
+  .db-profile strong, .db-profile small { display:block; overflow-wrap:anywhere; } .db-profile small { color:var(--text-dim); font-size:.78rem; }
+  .db-avatar { flex:none; width:42px; height:42px; border-radius:50%; display:grid; place-items:center; background:linear-gradient(135deg,#4fd1b0,#2f9e86); color:#0a100d; font-weight:700; }
+  .db-profile-line { color:var(--text-dim); font-size:.82rem; margin:0 0 4px; }
+  .db-progress-label { display:flex; justify-content:space-between; gap:8px; margin:14px 0 8px; font-size:.75rem; color:var(--text-dim); }
+  .db-progress { height:9px; border-radius:20px; background:var(--border); overflow:hidden; }
+  .db-progress span { display:block; height:100%; background:linear-gradient(90deg,#2f9e86,#4fd1b0); }
+  .db-streak { display:flex; align-items:center; gap:13px; padding:16px; }
+  .db-streak-ico { flex:none; width:44px; height:44px; border-radius:50%; background:rgba(220,178,95,.14); color:var(--ya-gold); display:grid; place-items:center; }
+  .db-streak-ico svg { width:22px; height:22px; }
+  .db-streak-text { flex:1; display:flex; flex-direction:column; } .db-streak-text small { color:var(--text-dim); font-size:.75rem; font-weight:400; } .db-streak-text strong { font-size:1.35rem; font-weight:650; }
+  .db-chev { color:var(--text-dim); font-size:1.4rem; }
+  .db-activity { display:grid; gap:14px; }
+  .db-activity-item { display:flex; align-items:center; gap:10px; }
+  .db-activity-ico { flex:none; width:38px; height:38px; border-radius:50%; display:grid; place-items:center; background:#135d78; color:#e8eee9; }
+  .db-activity-ico.db-partial { background:#85542c; } .db-activity-ico svg { width:18px; height:18px; }
+  .db-activity-text { min-width:0; display:flex; flex-direction:column; } .db-activity-text strong { font-size:.82rem; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .db-activity-text small { color:var(--text-dim); font-size:.72rem; }
+  .db-ach { display:flex; flex-wrap:wrap; gap:8px; font-size:1.3rem; }
+  .db-msg-row { display:flex; align-items:center; gap:10px; margin-bottom:10px; } .db-msg-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.88rem; }
+  .db-fav { display:block; width:100%; text-align:left; background:none; color:var(--text); padding:7px 4px; font-size:.86rem; font-weight:500; border-bottom:1px solid var(--border); border-radius:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .db-fav:hover { color:var(--accent); opacity:1; }
+  @media (max-width: 1180px) { .db-grid { grid-template-columns:1fr; } .db-quick { grid-template-columns:repeat(2,minmax(0,1fr)); } .db-action { min-height:150px; } }
+  @media (max-width: 960px) {
+    body.is-auth .db { grid-template-columns:1fr; }
+    .db-side { height:auto; display:block; overflow-x:auto; overflow-y:hidden; padding:8px 10px; border-right:0; border-bottom:1px solid var(--border); z-index:5; }
+    .db-nav { display:flex; gap:4px; } .db-group { display:flex; gap:4px; margin:0; } .db-group-label { display:none; }
+    .db-nav-btn { width:auto; white-space:nowrap; padding:8px 12px; font-size:.82rem; gap:8px; } .db-nav-btn svg { width:17px; height:17px; }
+    .db-nav-btn .dm-badge { margin-left:4px; }
+    .db-tiles { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  }
+  @media (max-width: 700px) { .db { --db-top:62px; } .db-main { padding:12px; } .db-hero { padding:22px 18px; } .db-feature { grid-template-columns:1fr; } .db-feature-img { height:170px; } .db-tiles { grid-template-columns:1fr; } .db-action { padding:13px; min-height:150px; } }
 </style>
 </head>
 <body class="is-home">
@@ -534,6 +627,9 @@
 
   <!-- SCREEN 0: HOME -->
   <div id="home-screen" class="screen active">
+
+    <!-- Dashboard for signed-in people (the sections below are the classic home, kept for guests) -->
+    <div id="dash" class="db" aria-label="Dashboard"></div>
 
     <!-- Hero -->
     <section class="ya-hero" id="top" aria-labelledby="ya-h1">
@@ -5493,6 +5589,7 @@ function dmSetSide(side){
 
 // ---------- rendering ----------
 function dmUpdateBadge(){
+  try { dbRefreshMessages(); } catch(e) {}   // keep the dashboard's Messages card and badge in step
   const b = document.getElementById("dm-home-badge"); if(!b) return;
   const n = authUser ? dmUnreadTotal() : 0;
   b.textContent = n > 99 ? "99+" : String(n);
@@ -5761,6 +5858,275 @@ window.addEventListener("online", dmOnline);
 window.addEventListener("offline", dmOnOffline);
 document.addEventListener("visibilitychange", () => { if(document.visibilityState === "visible" && authUser && dm.started){ dmCatchUp(); dmMarkReadSoon(); if(!dm.channel) dmStartRealtime(); } });
 
+// ===== DASHBOARD (signed-in home) =====
+// Replaces the long landing page for signed-in people with a dashboard built from their real data.
+// Everything is built with DOM calls and textContent, so names, routine titles and favorites can never inject HTML.
+// If anything here throws, renderHome() switches the classic home back on (body.db-off): Home is never blank.
+const DB_ICONS = {
+  home:["M3 11l9-8 9 8","M5 10v10h14V10"], play:["M7 4l13 8-13 8z"], routine:["M4 6h16","M4 12h10","M4 18h13"],
+  build:["M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z","M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10z"], bookmark:["M6 3h12v18l-6-4-6 4z"],
+  pose:["M12 3.8a2.2 2.2 0 1 0 0 4.4 2.2 2.2 0 0 0 0-4.4z","M12 9v6","M7 11l5-3 5 3","M9 21l3-6 3 6"],
+  flame:["M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2 1-3.2 2-4.2.2 1.4.9 2 1.7 2.2C10.3 8.4 10.6 5.6 12 3z"],
+  book:["M5 4h10a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3V4z","M5 17a3 3 0 0 1 3-3h10"], chat:["M20 12a8 8 0 0 1-11.6 7.1L4 20l1-4A8 8 0 1 1 20 12z"],
+  message:["M4 5h16v11H9l-5 4z","M8 9h8","M8 12h5"], chart:["M4 20V10","M10 20V4","M16 20v-8","M22 20H2"],
+  heart:["M12 21s-7-4.4-9.5-9A5.5 5.5 0 0 1 12 6.5 5.5 5.5 0 0 1 21.5 12C19 16.6 12 21 12 21z"], user:["M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z","M4 21a8 8 0 0 1 16 0"],
+  gear:["M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z","M12 3v2.5","M12 18.5V21","M3 12h2.5","M18.5 12H21","M5.6 5.6l1.8 1.8","M16.6 16.6l1.8 1.8","M5.6 18.4l1.8-1.8","M16.6 7.4l1.8-1.8"],
+  sparkle:["M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z","M19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"],
+  star:["M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"]
+};
+let dbMsgBadge = null;
+function dbEl(tag, cls, text){ const e = document.createElement(tag); if(cls) e.className = cls; if(text != null) e.textContent = String(text); return e; }
+function dbIcon(name){
+  const NS = "http://www.w3.org/2000/svg", s = document.createElementNS(NS, "svg");
+  s.setAttribute("viewBox", "0 0 24 24"); s.setAttribute("fill", "none"); s.setAttribute("stroke", "currentColor"); s.setAttribute("stroke-width", "1.6");
+  s.setAttribute("stroke-linecap", "round"); s.setAttribute("stroke-linejoin", "round"); s.setAttribute("aria-hidden", "true");
+  (DB_ICONS[name] || []).forEach(d => { const p = document.createElementNS(NS, "path"); p.setAttribute("d", d); s.appendChild(p); });
+  return s;
+}
+function dbBtn(cls, label, fn){ const b = dbEl("button", cls); b.type = "button"; if(label != null) b.appendChild(dbEl("span", "", label)); if(fn) b.onclick = fn; return b; }
+function dbWeekCount(){
+  const t = dayNum(todayStr()), days = new Set();
+  userData.sessions.forEach(s => { if(s.counts_for_streak && s.local_date){ const d = t - dayNum(s.local_date); if(d >= 0 && d < 7) days.add(s.local_date); } });
+  return days.size;
+}
+function dbContext(){
+  const today = todayStr(), ready = !!userData.loaded, avail = !!userData.available, ok = ready && avail;
+  return { today, ready, avail, stats: ok ? computeStats(userData.sessions, today) : null, plan: ready ? getTodayPlan() : null,
+           week: ok ? dbWeekCount() : 0, name: (authProfile && authProfile.display_name) || "there" };
+}
+
+// ---------- left navigation ----------
+function dbNavSpec(){
+  return [
+    ["Practice", [["home", "Home", () => { if(typeof window.scrollTo === "function") window.scrollTo(0, 0); }, true], ["play", "Today's practice", () => startTodayPractice()],
+      ["routine", "Workout routines", () => goToScreen("routines")], ["build", "Personal routine", () => goToScreen("intake")],
+      ["bookmark", "Saved routines", () => openSavedRoutines()], ["pose", "Free exercise", () => showFreeExercise()], ["flame", "Calorie burner", () => goToScreen("calorie")]]],
+    ["Learn", [["pose", "Pose explorer", () => yaNav("explore")], ["book", "Yog Kriya notes", () => showLearnList()], ["chat", "Yoga Assistant", () => showChat()]]],
+    ["You", [["message", "Messages", () => showMessages(), false, true], ["chart", "Progress", () => showProgressScreen()], ["heart", "Favorites", () => showFavoritesScreen()],
+      ["user", "Profile", () => showAccountScreen()], ["gear", "Settings", () => showSettings()]]]
+  ];
+}
+function dbSidebar(){
+  const side = dbEl("aside", "db-side"), nav = dbEl("nav", "db-nav"); nav.setAttribute("aria-label", "Dashboard");
+  dbMsgBadge = null;
+  dbNavSpec().forEach(([label, items]) => {
+    const g = dbEl("div", "db-group"); g.appendChild(dbEl("div", "db-group-label", label));
+    items.forEach(([ico, text, fn, active, badge]) => {
+      const b = dbBtn("db-nav-btn" + (active ? " on" : ""), null, fn); b.appendChild(dbIcon(ico)); b.appendChild(dbEl("span", "", text));
+      if(active) b.setAttribute("aria-current", "page");
+      if(badge){ dbMsgBadge = dbEl("span", "dm-badge"); dbMsgBadge.style.display = "none"; b.appendChild(dbMsgBadge); }
+      g.appendChild(b);
+    });
+    nav.appendChild(g);
+  });
+  side.appendChild(nav); return side;
+}
+
+// ---------- hero ----------
+function dbHeroLine(c){
+  if(!c.ready) return "Loading your progress...";
+  if(!c.avail) return "Your history is unavailable right now, but you can still practice.";
+  const s = c.stats;
+  if(s.sessions === 0) return "Welcome. Your first practice is ready below.";
+  if(s.practicedToday) return (s.currentStreak > 1 ? s.currentStreak + "-day streak. " : "") + "You've practiced today. Nice work.";
+  if(s.currentStreak > 0) return s.currentStreak + "-day streak. Practice today to keep it going.";
+  return "Pick up where you left off with today's practice.";
+}
+function dbChips(c){
+  if(!c.ready) return ["Loading your progress..."];
+  if(!c.avail) return ["History unavailable right now"];
+  const s = c.stats, out = [];
+  if(s.currentStreak > 0) out.push(s.currentStreak + "-day streak");
+  out.push(c.week + " of 7 days this week");
+  if(s.completeSessions > 0) out.push(s.completeSessions + (s.completeSessions === 1 ? " session" : " sessions"));
+  if(s.totalSeconds > 0) out.push(fmtTotal(s.totalSeconds) + " practiced");
+  if(s.practicedToday) out.push("Practiced today");
+  return out;
+}
+function dbHero(c){
+  const h = dbEl("section", "db-hero");
+  h.style.backgroundImage = "linear-gradient(90deg,rgba(10,16,13,.96),rgba(18,27,23,.82),rgba(18,27,23,.3)), url('" + YA_PX(6453400) + "')";
+  h.appendChild(dbEl("h1", "", greetingWord() + ", " + c.name));
+  h.appendChild(dbEl("p", "db-hero-line", dbHeroLine(c)));
+  const chips = dbEl("div", "db-chips"); dbChips(c).forEach(t => chips.appendChild(dbEl("span", "ya-chip", t))); h.appendChild(chips);
+  return h;
+}
+
+// ---------- quick actions ----------
+function dbQuick(c){
+  const grid = dbEl("div", "db-quick"), plan = c.plan && c.plan.steps.length ? c.plan : null;
+  [["mint", "play", "Start a Practice", plan ? plan.estMinutes + " min " + String(plan.goalLabel).toLowerCase() + " practice, chosen for you." : "Jump into today's session.", () => startTodayPractice()],
+   ["blue", "sparkle", "Suggest a Routine", "Choose a goal and time for a plan that respects your safety filters.", () => openSavedRoutines()],
+   ["gold", "pose", "Explore Poses", "Browse poses, their focus and the cue used for form feedback.", () => yaNav("explore")],
+   ["cyan", "chat", "Chat with Yoga Assistant", "Ask questions and get guidance for your practice.", () => showChat()]
+  ].forEach(([tone, ico, title, desc, fn]) => {
+    const b = dbBtn("db-action db-" + tone, null, fn), i = dbEl("span", "db-action-ico"); i.appendChild(dbIcon(ico));
+    b.appendChild(i); b.appendChild(dbEl("strong", "", title)); b.appendChild(dbEl("span", "db-desc", desc)); b.appendChild(dbEl("span", "db-arrow", "→"));
+    grid.appendChild(b);
+  });
+  return grid;
+}
+
+// ---------- today's practice ----------
+function dbToday(c){
+  const card = dbEl("section", "db-card");
+  card.appendChild(dbEl("h2", "", "Today's practice"));
+  card.appendChild(dbEl("p", "db-sub", "A session chosen from your level, goals, recent practice and pain areas."));
+  if(!c.ready){ card.appendChild(dbEl("p", "db-empty", "Preparing today's practice...")); return card; }
+  const plan = c.plan;
+  if(!plan || !plan.steps.length){
+    card.appendChild(dbEl("p", "db-empty", (plan && plan.reason) || "No practice is available right now."));
+    card.appendChild(dbBtn("db-btn", "Edit preferences", () => showPersonalizeScreen(false))); return card;
+  }
+  const first = plan.names.slice(0, plan.passCount), photo = first.map(yaPhotoFor).find(Boolean) || YA_PX(6453400);
+  const grid = dbEl("div", "db-feature"), img = dbEl("div", "db-feature-img");
+  img.style.backgroundImage = "url('" + photo + "')"; img.setAttribute("role", "img"); img.setAttribute("aria-label", "A pose from today's practice");
+  const body = dbEl("div", "");
+  body.appendChild(dbEl("h3", "", plan.goalLabel + " practice"));
+  const meta = dbEl("div", "db-meta");
+  if(plan.source === "ai") meta.appendChild(dbEl("span", "ya-chip ya-chip-ai", "AI Personalized")); else if(plan.usedHistory) meta.appendChild(dbEl("span", "ya-chip", "Based on your practice"));
+  meta.appendChild(dbEl("span", "ya-chip", plan.estMinutes + " min")); meta.appendChild(dbEl("span", "ya-chip", plan.levelLabel)); meta.appendChild(dbEl("span", "ya-chip", plan.names.length + " steps"));
+  if(c.stats && c.stats.practicedToday) meta.appendChild(dbEl("span", "ya-chip", "Extra session"));
+  body.appendChild(meta);
+  const note = (plan.estMinutes < plan.minutesTarget * 0.7 && plan.rounds === 1) ? "About " + plan.estMinutes + " min. That is all the matching exercises available for your settings." : (plan.whyOverall[0] || "");
+  if(note) body.appendChild(dbEl("p", "db-note", note));
+  const steps = dbEl("div", "db-steps");
+  first.slice(0, 5).forEach((n, i) => {
+    const s = plan.steps.find(x => x.name === n), row = dbEl("div", "db-step");
+    row.appendChild(dbEl("span", "db-step-n", String(i + 1).padStart(2, "0"))); row.appendChild(dbEl("span", "db-step-name", n));
+    row.appendChild(dbEl("small", "", s ? (s.type === "counter" ? s.target + " reps" : s.target + " sec hold") : "")); steps.appendChild(row);
+  });
+  if(first.length > 5) steps.appendChild(dbEl("div", "db-more", "+ " + (first.length - 5) + " more exercises" + (plan.rounds > 1 ? ", repeated " + plan.rounds + " times" : "")));
+  body.appendChild(steps);
+  const row = dbEl("div", "db-btnrow"); row.appendChild(dbBtn("db-btn db-btn-primary", "Start now", () => startTodayPractice()));
+  if(!hasPersonalization(authProfile)) row.appendChild(dbBtn("db-btn", "Set preferences", () => showPersonalizeScreen(false)));
+  body.appendChild(row);
+  const why = dbEl("details", "db-why"); why.appendChild(dbEl("summary", "", "Why this?"));
+  plan.whyOverall.forEach(l => why.appendChild(dbEl("p", "", l)));
+  first.forEach(n => { const r = dbEl("div", "db-why-row"); r.appendChild(dbEl("b", "", n)); r.appendChild(dbEl("span", "", (plan.why[n] || []).join(" · "))); why.appendChild(r); });
+  body.appendChild(why);
+  grid.appendChild(img); grid.appendChild(body); card.appendChild(grid); return card;
+}
+
+// ---------- explore and grow ----------
+function dbExplore(c){
+  const card = dbEl("section", "db-card");
+  card.appendChild(dbEl("h2", "", "Explore and grow"));
+  const saved = (savedRoutinesState === "ready" && savedRoutinesUid === authUser.id) ? savedRoutines.length + " of " + MAX_SAVED_ROUTINES + " saved. Start, edit or delete." : "Start, edit or delete your saved routines.";
+  const grid = dbEl("div", "db-tiles");
+  [["routine", "Workout routines", "Surya Namaskara, Chandra Namaskar and more", () => goToScreen("routines")],
+   ["build", "Personal routine", "Tell us about you, then build your own", () => goToScreen("intake")],
+   ["bookmark", "Saved routines", saved, () => openSavedRoutines()],
+   ["pose", "Free exercise", "Pick any single asana and go", () => showFreeExercise()],
+   ["flame", "Calorie burner", "Push-ups, squats and more with live calories", () => goToScreen("calorie")],
+   ["book", "Yog Kriya notes", "Your own notes, videos and audio", () => showLearnList()]
+  ].forEach(([ico, title, sub, fn]) => {
+    const b = dbBtn("db-tile", null, fn), i = dbEl("span", "db-tile-ico"); i.appendChild(dbIcon(ico));
+    const t = dbEl("span", "db-tile-text"); t.appendChild(dbEl("strong", "", title)); t.appendChild(dbEl("small", "", sub));
+    b.appendChild(i); b.appendChild(t); grid.appendChild(b);
+  });
+  card.appendChild(grid); return card;
+}
+
+// ---------- right column ----------
+function dbProfileCard(c){
+  const card = dbEl("section", "db-card db-side-card"), p = authProfile || {}, row = dbEl("div", "db-profile");
+  row.appendChild(dbEl("div", "db-avatar", String(c.name || "?").trim().charAt(0).toUpperCase() || "?"));
+  const t = dbEl("div", ""); t.appendChild(dbEl("strong", "", c.name));
+  const since = p.created_at ? new Date(p.created_at) : null;
+  if(since && !isNaN(since)) t.appendChild(dbEl("small", "", "Member since " + since.toLocaleDateString([], { month:"long", year:"numeric" })));
+  row.appendChild(t); card.appendChild(row);
+  if(hasPersonalization(authProfile)){
+    const goals = (Array.isArray(p.goals) ? p.goals : []).slice(0, 2).map(cap).join(", ");
+    card.appendChild(dbEl("p", "db-profile-line", [cap(p.yoga_level), goals].filter(Boolean).join(" · ")));
+  } else card.appendChild(dbBtn("db-btn", "Set your preferences", () => showPersonalizeScreen(false)));
+  const lab = dbEl("div", "db-progress-label"); lab.appendChild(dbEl("span", "", "This week"));
+  lab.appendChild(dbEl("span", "", c.ready && c.avail ? c.week + " / 7 days" : "-")); card.appendChild(lab);
+  const bar = dbEl("div", "db-progress"), fill = dbEl("span"); fill.style.width = Math.round((c.week / 7) * 100) + "%"; bar.appendChild(fill); card.appendChild(bar);
+  return card;
+}
+function dbStreakCard(c){
+  const b = dbBtn("db-card db-streak", null, () => showProgressScreen());
+  const ico = dbEl("span", "db-streak-ico"); ico.appendChild(dbIcon("flame")); b.appendChild(ico);
+  const t = dbEl("span", "db-streak-text"); t.appendChild(dbEl("small", "", "Current streak"));
+  const n = c.stats ? c.stats.currentStreak : 0;
+  t.appendChild(dbEl("strong", "", c.stats ? n + (n === 1 ? " day" : " days") : "-"));
+  if(c.stats && c.stats.longestStreak > 0) t.appendChild(dbEl("small", "", "Longest: " + c.stats.longestStreak + (c.stats.longestStreak === 1 ? " day" : " days")));
+  b.appendChild(t); b.appendChild(dbEl("span", "db-chev", "›")); return b;
+}
+function dbActivityCard(c){
+  const card = dbEl("section", "db-card db-side-card"), head = dbEl("div", "db-card-row");
+  head.appendChild(dbEl("h2", "", "Recent activity")); head.appendChild(dbBtn("db-link", "View all", () => showHistoryScreen())); card.appendChild(head);
+  if(!c.ready){ card.appendChild(dbEl("p", "db-empty", "Loading...")); return card; }
+  if(!c.avail){ card.appendChild(dbEl("p", "db-empty", "History is unavailable right now.")); return card; }
+  const rows = userData.sessions.slice(0, 4);
+  if(!rows.length){ card.appendChild(dbEl("p", "db-empty", "No sessions yet. Your first practice will appear here.")); return card; }
+  const list = dbEl("div", "db-activity");
+  rows.forEach(s => {
+    const r = dbEl("div", "db-activity-item"), i = dbEl("span", "db-activity-ico" + (s.completion_status === "complete" ? "" : " db-partial")); i.appendChild(dbIcon(s.completion_status === "complete" ? "play" : "pose"));
+    const t = dbEl("span", "db-activity-text"); t.appendChild(dbEl("strong", "", sessionTitle(s)));
+    t.appendChild(dbEl("small", "", relDay(s.local_date, c.today) + " · " + fmtTotal(s.duration_seconds) + " · " + (s.completion_status === "complete" ? "Complete" : "Partial")));
+    r.appendChild(i); r.appendChild(t); list.appendChild(r);
+  });
+  card.appendChild(list); return card;
+}
+function dbAchievementsCard(c){
+  const card = dbEl("section", "db-card db-side-card"), head = dbEl("div", "db-card-row");
+  const got = ACHIEVEMENTS.filter(a => userData.achievements.has(a.key));
+  head.appendChild(dbEl("h2", "", "Achievements")); head.appendChild(dbEl("span", "db-count", got.length + " of " + ACHIEVEMENTS.length)); card.appendChild(head);
+  if(!got.length){ card.appendChild(dbEl("p", "db-empty", c.ready ? "Complete a session to unlock your first one." : "Loading...")); return card; }
+  const row = dbEl("div", "db-ach"); got.slice(0, 8).forEach(a => { const e = dbEl("span", "", a.icon); e.title = a.title; e.setAttribute("aria-label", a.title); row.appendChild(e); }); card.appendChild(row);
+  return card;
+}
+function dbFillMessages(card){
+  card.textContent = "";
+  const head = dbEl("div", "db-card-row"), started = !!(dm && dm.started && dm.convState === "ready"), total = started ? dmUnreadTotal() : 0;
+  head.appendChild(dbEl("h2", "", "Messages")); if(total > 0) head.appendChild(dbEl("span", "dm-badge", total > 99 ? "99+" : total)); card.appendChild(head);
+  if(!started) card.appendChild(dbEl("p", "db-empty", p2IsOffline() ? "You're offline." : "Open Messages to see your conversations."));
+  else if(!dm.convs.length) card.appendChild(dbEl("p", "db-empty", "No conversations yet. Find people under People."));
+  else {
+    const unread = dm.convs.filter(x => x.unread > 0).slice(0, 3);
+    if(!unread.length) card.appendChild(dbEl("p", "db-empty", "You're all caught up."));
+    unread.forEach(x => { const r = dbEl("div", "db-msg-row"); r.appendChild(dbEl("span", "dm-avatar", dmInitials(x.peerName))); r.appendChild(dbEl("span", "db-msg-name", x.peerName)); r.appendChild(dbEl("span", "dm-badge", x.unread > 99 ? "99+" : x.unread)); card.appendChild(r); });
+  }
+  card.appendChild(dbBtn("db-btn", "Open Messages", () => showMessages()));
+}
+function dbUpdateMsgBadge(){
+  if(!dbMsgBadge) return;
+  const n = (authUser && dm && dm.started) ? dmUnreadTotal() : 0;
+  dbMsgBadge.textContent = n > 99 ? "99+" : String(n); dbMsgBadge.style.display = n > 0 ? "inline-block" : "none";
+}
+function dbRefreshMessages(){
+  const card = document.getElementById("db-msg-card");
+  if(card){ if(authUser) dbFillMessages(card); else card.textContent = ""; }
+  dbUpdateMsgBadge();
+}
+function dbFavoritesCard(c){
+  const card = dbEl("section", "db-card db-side-card"), head = dbEl("div", "db-card-row");
+  head.appendChild(dbEl("h2", "", "Favorites")); head.appendChild(dbBtn("db-link", "All favorites", () => showFavoritesScreen())); card.appendChild(head);
+  const rows = userData.favoriteRows.slice(-4).reverse();
+  if(!rows.length){ card.appendChild(dbEl("p", "db-empty", "Tap the heart next to any pose, exercise or routine to keep it here.")); return card; }
+  rows.forEach(r => card.appendChild(dbBtn("db-fav", r.item_name || r.item_key, () => UI.openFav(r.kind + "|" + r.item_key))));
+  return card;
+}
+
+// ---------- assemble ----------
+function renderDashboard(){
+  const root = document.getElementById("dash"); if(!root) return;
+  root.textContent = ""; dbMsgBadge = null;
+  if(!authUser) return;
+  const c = dbContext();
+  root.appendChild(dbSidebar());
+  const main = dbEl("div", "db-main"); main.appendChild(dbHero(c));
+  const grid = dbEl("div", "db-grid"), left = dbEl("div", "db-col"), right = dbEl("aside", "db-right");
+  left.appendChild(dbQuick(c)); left.appendChild(dbToday(c)); left.appendChild(dbExplore(c));
+  right.appendChild(dbProfileCard(c)); right.appendChild(dbStreakCard(c)); right.appendChild(dbActivityCard(c)); right.appendChild(dbAchievementsCard(c));
+  const msg = dbEl("section", "db-card db-side-card"); msg.id = "db-msg-card"; right.appendChild(msg); dbFillMessages(msg);
+  right.appendChild(dbFavoritesCard(c));
+  grid.appendChild(left); grid.appendChild(right); main.appendChild(grid); root.appendChild(main);
+  dbUpdateMsgBadge();
+}
+
 // ---------- post-session insight ----------
 function buildInsightFacts(saved, result, prev){
   const row = saved, ex = Array.isArray(row.completed_exercises) ? row.completed_exercises : [];
@@ -5863,7 +6229,7 @@ function renderHome(){
   const todayMount = document.getElementById("home-today"); if(!todayMount) return;
   document.body.classList.toggle("is-auth", !!authUser);
   const progMount = document.getElementById("home-progress"), greet = document.getElementById("home-greet"), meta = document.getElementById("home-meta");
-  if(!authUser){ [todayMount, progMount, meta].forEach(e=>{ if(e) e.innerHTML = ""; }); if(greet) greet.textContent = ""; return; }
+  if(!authUser){ [todayMount, progMount, meta].forEach(e=>{ if(e) e.innerHTML = ""; }); if(greet) greet.textContent = ""; try { renderDashboard(); } catch(e) {} return; }
 
   const today = todayStr(), name = (authProfile && authProfile.display_name) || "there";
   const ready = userData.loaded, stats = computeStats(userData.sessions, today);
@@ -5890,6 +6256,9 @@ function renderHome(){
       : '<div class="ya-panel ya-card" style="margin-top:34px"><h3>No practice available</h3><p class="ya-empty">' + escapeHtml(plan.reason) + '</p><div class="ya-actions" style="margin-top:14px"><button class="ya-btn" data-act="prefs">Edit preferences</button></div></div>';
   }
   progMount.innerHTML = yaProgressHtml(stats, today, ready);
+  // Signed-in dashboard. If it ever fails, body.db-off brings the classic home back so Home is never blank.
+  try { renderDashboard(); document.body.classList.remove("db-off"); }
+  catch(e){ console.warn("Dashboard failed, showing the classic home", e); document.body.classList.add("db-off"); }
 }
 
 function yaPhotoFor(name){
