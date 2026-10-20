@@ -1101,7 +1101,7 @@
   <!-- SCREEN: PERSONAL BUILDER -->
   <div id="build-screen" class="screen">
     <div class="card">
-      <button class="back-link" onclick="goToScreen(builderBackTarget)"><span class="back-link-icon" aria-hidden="true">←</span><span>Back</span></button>
+      <button class="back-link" onclick="goBackFromBuilder()"><span class="back-link-icon" aria-hidden="true">←</span><span>Back</span></button>
       <h2>Build your routine</h2>
       <div class="hint" style="margin-bottom:14px;">Click items to add them to your routine, in the order you want to do them.</div>
       <div class="section-label">Suggest a routine</div>
@@ -3773,6 +3773,7 @@ LEVEL_ORDER.forEach((lvl,i)=>{
 let currentRecommended=[], currentExcluded=[];
 let myRoutine = [];
 let builderBackTarget = "intake";   // "home" when the builder was opened from My Saved Routines
+window.goBackFromBuilder = function(){ goToScreen(builderBackTarget); };
 
 window.submitIntake = function(){
   const issues = Array.from(issuesGrid.querySelectorAll("input:checked")).map(i=>i.value);
