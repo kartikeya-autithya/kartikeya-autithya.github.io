@@ -78,8 +78,49 @@
   .step-progress { font-size:.85rem; color:var(--accent); font-weight:600; margin-bottom:8px; }
   .weight-row { display:flex; gap:10px; align-items:center; margin-bottom:20px; }
   .weight-row input { max-width:120px; }
-  .back-link { background:none; color:var(--text-dim); padding:6px 0; font-weight:500; }
-  .back-link:hover { color:var(--accent); opacity:1; }
+  /* YOG AI branded back button */
+  .back-link {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:9px;
+    min-height:42px;
+    padding:9px 16px;
+    margin:0 0 14px 0;
+    background:rgba(18,27,23,.92);
+    color:var(--accent);
+    border:1px solid rgba(79,209,176,.34);
+    border-radius:999px;
+    font-family:"Jost","Avenir Next","Segoe UI",sans-serif;
+    font-size:.9rem;
+    font-weight:600;
+    letter-spacing:.015em;
+    line-height:1.2;
+    box-shadow:0 4px 16px rgba(0,0,0,.16);
+    transition:background .22s ease,border-color .22s ease,color .22s ease,box-shadow .22s ease,transform .22s ease;
+  }
+  .back-link .back-link-icon {
+    display:inline-block;
+    color:var(--ya-gold, #dcb25f);
+    font-size:1.22em;
+    line-height:1;
+    transition:color .22s ease,transform .22s ease;
+  }
+  .back-link:hover {
+    background:#16251e;
+    color:var(--text);
+    border-color:var(--accent);
+    box-shadow:0 0 18px rgba(79,209,176,.14);
+    opacity:1;
+    transform:translateY(-1px);
+  }
+  .back-link:hover .back-link-icon { color:var(--accent); transform:translateX(-2px); }
+  .back-link:active { transform:translateY(0) scale(.98); }
+  .back-link:focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
+  @media (prefers-reduced-motion:reduce) {
+    .back-link,.back-link .back-link-icon { transition:none; }
+    .back-link:hover,.back-link:active { transform:none; }
+  }
   .header-row { display:flex; justify-content:space-between; align-items:flex-start; }
   .settings-btn { background:#0f1612; border:1px solid var(--border); color:var(--text-dim); padding:8px 14px; font-size:0.85rem; }
   .settings-btn:hover { color:var(--accent); border-color:var(--accent); }
@@ -826,7 +867,7 @@
   <!-- SCREEN: SETTINGS -->
   <div id="settings-screen" class="screen">
     <div class="card">
-      <button class="back-link" onclick="goToScreen('home')">← Back</button>
+      <button class="back-link" onclick="goToScreen('home')"><span class="back-link-icon" aria-hidden="true">←</span><span>Back</span></button>
       <h2>Settings</h2>
 
       <div class="field-group">
@@ -855,7 +896,7 @@
   <!-- SCREEN: CHATBOT -->
   <div id="chat-screen" class="screen">
     <div class="card">
-      <button class="back-link" onclick="goToScreen('home')">← Back</button>
+      <button class="back-link" onclick="goToScreen('home')"><span class="back-link-icon" aria-hidden="true">←</span><span>Back</span></button>
       <h2>Chat with Yoga Assistant</h2>
 
       <div id="chat-main">
@@ -878,7 +919,7 @@
   <!-- SCREEN: AUTH (Login / Sign Up / Forgot Password / Reset) -->
   <div id="auth-screen" class="screen">
     <div class="card">
-      <button class="back-link" onclick="goToScreen('home')">← Back</button>
+      <button class="back-link" onclick="goToScreen('home')"><span class="back-link-icon" aria-hidden="true">←</span><span>Back</span></button>
 
       <div class="auth-tab-row" id="auth-tab-row">
         <button class="auth-tab-btn" id="auth-tab-login" onclick="switchAuthView('login')">Log In</button>
@@ -927,7 +968,7 @@
   <!-- SCREEN: ACCOUNT -->
   <div id="account-screen" class="screen">
     <div class="card">
-      <button class="back-link" onclick="goToScreen('home')">← Back</button>
+      <button class="back-link" onclick="goToScreen('home')"><span class="back-link-icon" aria-hidden="true">←</span><span>Back</span></button>
       <h2>My Account</h2>
       <div class="field-group">
         <div class="form-label">Display name</div>
@@ -968,7 +1009,7 @@
   <!-- SCREEN: PERSONALIZE -->
   <div id="personalize-screen" class="screen">
     <div class="card">
-      <button class="back-link" id="personalize-back-link" onclick="goToScreen('account')">← Back</button>
+      <button class="back-link" id="personalize-back-link" onclick="goToScreen('account')"><span class="back-link-icon" aria-hidden="true">←</span><span>Back</span></button>
       <h2 id="personalize-heading">Personalize Your Practice</h2>
       <p class="hint" id="personalize-intro" style="margin-top:0;">Set this up once and YogaAI will remember it every time you log in.</p>
 
@@ -1004,7 +1045,7 @@
   <!-- SCREEN: ROUTINES -->
   <div id="routines-screen" class="screen">
     <div class="card">
-      <button class="back-link" onclick="goToScreen('home')">← Back</button>
+      <button class="back-link" onclick="goToScreen('home')"><span class="back-link-icon" aria-hidden="true">←</span><span>Back</span></button>
       <h2>Free Workout Routines</h2>
       <div id="routines-list" class="pose-list"></div>
     </div>
@@ -1013,7 +1054,7 @@
   <!-- SCREEN: FREE EXERCISE -->
   <div id="free-exercise-screen" class="screen">
     <div class="card">
-      <button class="back-link" onclick="goToScreen('home')">← Back</button>
+      <button class="back-link" onclick="goToScreen('home')"><span class="back-link-icon" aria-hidden="true">←</span><span>Back</span></button>
       <h2>Free Exercise</h2>
       <input type="search" id="free-search" class="free-search" placeholder="Search asanas by name, Sanskrit or alias" aria-label="Search asanas" autocomplete="off">
       <div class="section-label">Asanas</div>
@@ -1026,7 +1067,7 @@
   <!-- SCREEN: CALORIE BURNER -->
   <div id="calorie-screen" class="screen">
     <div class="card">
-      <button class="back-link" onclick="goToScreen('home')">← Back</button>
+      <button class="back-link" onclick="goToScreen('home')"><span class="back-link-icon" aria-hidden="true">←</span><span>Back</span></button>
       <h2>Calorie Burner</h2>
       <div class="field-group">
         <div class="field-label" style="font-weight:600;margin-bottom:10px;">Your weight (for calorie estimate)</div>
@@ -1046,7 +1087,7 @@
   <!-- SCREEN: INTAKE (for Personal Workout Routine) -->
   <div id="intake-screen" class="screen">
     <div class="card">
-      <button class="back-link" onclick="goToScreen('home')">← Back</button>
+      <button class="back-link" onclick="goToScreen('home')"><span class="back-link-icon" aria-hidden="true">←</span><span>Back</span></button>
       <h2>1. Any physical issues?</h2>
       <div class="field-group"><div class="checkbox-grid" id="issues-grid"></div></div>
       <h2>2. Your yoga level</h2>
@@ -1060,7 +1101,7 @@
   <!-- SCREEN: PERSONAL BUILDER -->
   <div id="build-screen" class="screen">
     <div class="card">
-      <button class="back-link" onclick="goToScreen(builderBackTarget)">← Back</button>
+      <button class="back-link" onclick="goToScreen(builderBackTarget)"><span class="back-link-icon" aria-hidden="true">←</span><span>Back</span></button>
       <h2>Build your routine</h2>
       <div class="hint" style="margin-bottom:14px;">Click items to add them to your routine, in the order you want to do them.</div>
       <div class="section-label">Suggest a routine</div>
@@ -1099,7 +1140,7 @@
   <!-- SCREEN: MESSAGES (user-to-user chat) -->
   <div id="messages-screen" class="screen">
     <div class="card">
-      <button class="back-link" onclick="dmBack()">← Back</button>
+      <button class="back-link" onclick="dmBack()"><span class="back-link-icon" aria-hidden="true">←</span><span>Back</span></button>
       <h2>Messages</h2>
       <div id="dm-banner" class="dm-banner" role="status" style="display:none;"></div>
       <div id="dm-wrap" class="dm-wrap">
@@ -1115,7 +1156,7 @@
   <!-- SCREEN: LEARN LIST -->
   <div id="learn-screen" class="screen">
     <div class="card">
-      <button class="back-link" onclick="goToScreen('home')">← Back</button>
+      <button class="back-link" onclick="goToScreen('home')"><span class="back-link-icon" aria-hidden="true">←</span><span>Back</span></button>
       <h2>Learn More About Yoga</h2>
       <button class="btn-primary" onclick="showLearnEdit(null)" style="margin-bottom:10px;">+ Add Yog Kriya</button>
       <button class="btn-secondary" onclick="exportKriyas()" style="margin-bottom:18px; margin-left:8px;">⬇ Export backup</button>
@@ -1128,7 +1169,7 @@
   <!-- SCREEN: LEARN EDIT (create/edit) -->
   <div id="learn-edit-screen" class="screen">
     <div class="card">
-      <button class="back-link" onclick="goToScreen('learn')">← Back</button>
+      <button class="back-link" onclick="goToScreen('learn')"><span class="back-link-icon" aria-hidden="true">←</span><span>Back</span></button>
       <h2 id="learn-edit-heading">Add Yog Kriya</h2>
       <div class="field-group">
         <label class="form-label">Title</label>
@@ -1155,7 +1196,7 @@
   <!-- SCREEN: LEARN DETAIL -->
   <div id="learn-detail-screen" class="screen">
     <div class="card">
-      <button class="back-link" onclick="goToScreen('learn')">← Back</button>
+      <button class="back-link" onclick="goToScreen('learn')"><span class="back-link-icon" aria-hidden="true">←</span><span>Back</span></button>
       <div class="title-row"><h2 id="detail-title">-</h2><button type="button" class="fav-btn" id="detail-fav" data-kind="kriya" data-key="" title="Favorite" aria-label="Favorite this Kriya">♡</button></div>
       <div id="detail-media-wrap"></div>
       <div id="detail-text" class="kriya-detail-text"></div>
@@ -1169,7 +1210,7 @@
   <!-- SCREEN: PROGRESS -->
   <div id="progress-screen" class="screen">
     <div class="card">
-      <button class="back-link" onclick="goToScreen('home')">← Back</button>
+      <button class="back-link" onclick="goToScreen('home')"><span class="back-link-icon" aria-hidden="true">←</span><span>Back</span></button>
       <h2>My Progress</h2>
       <div id="progress-body"></div>
     </div>
@@ -1178,7 +1219,7 @@
   <!-- SCREEN: PRACTICE HISTORY -->
   <div id="history-screen" class="screen">
     <div class="card">
-      <button class="back-link" onclick="goToScreen('home')">← Back</button>
+      <button class="back-link" onclick="goToScreen('home')"><span class="back-link-icon" aria-hidden="true">←</span><span>Back</span></button>
       <h2>My Practice History</h2>
       <div id="history-body"></div>
     </div>
@@ -1187,7 +1228,7 @@
   <!-- SCREEN: FAVORITES -->
   <div id="favorites-screen" class="screen">
     <div class="card">
-      <button class="back-link" onclick="goToScreen('home')">← Back</button>
+      <button class="back-link" onclick="goToScreen('home')"><span class="back-link-icon" aria-hidden="true">←</span><span>Back</span></button>
       <h2>My Favorites</h2>
       <div id="favorites-body"></div>
     </div>
