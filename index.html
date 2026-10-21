@@ -535,6 +535,19 @@
   .dm-theirs .dm-bubble { background:#1c2823; color:var(--text); border-bottom-left-radius:4px; }
   .dm-sending .dm-bubble { opacity:.6; }
   .dm-failed .dm-bubble { background:transparent; color:var(--text); border:1px solid var(--danger); }
+  .dm-tags { display:flex; flex-wrap:wrap; gap:4px; margin-top:4px; }
+  .dm-mine .dm-tags { justify-content:flex-end; }
+  .dm-tag { font-size:.68rem; padding:2px 8px; border-radius:999px; border:1px solid var(--border); background:#0f1612; color:var(--text); white-space:nowrap; }
+  .dm-mine .dm-bubble { cursor:context-menu; }
+  .dm-ctx { position:fixed; z-index:1000; min-width:130px; background:#121b17; border:1px solid var(--border); border-radius:8px; padding:4px; box-shadow:0 6px 20px rgba(0,0,0,.45); }
+  .dm-ctx-item { display:block; width:100%; text-align:left; background:transparent; color:var(--text); padding:8px 14px; font-size:.85rem; border-radius:6px; }
+  .dm-ctx-item:hover, .dm-ctx-item:focus-visible { background:#1c2823; }
+  .dm-modal-back { position:fixed; inset:0; z-index:1001; background:rgba(0,0,0,.6); display:flex; align-items:center; justify-content:center; padding:16px; }
+  .dm-modal { width:100%; max-width:400px; max-height:85vh; overflow-y:auto; background:#121b17; border:1px solid var(--border); border-radius:12px; padding:18px; }
+  .dm-modal h3 { margin:0 0 4px; }
+  .dm-tagopt { display:flex; align-items:center; gap:10px; padding:8px 4px; border-bottom:1px solid var(--border); font-size:.88rem; }
+  .dm-tagopt.locked { opacity:.5; }
+  .dm-tagopt small { color:var(--text-dim); display:block; font-size:.72rem; }
   .dm-meta { font-size:.7rem; color:var(--text-dim); margin-top:2px; display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
   .dm-err { color:var(--danger); }
   .dm-more { align-self:center; padding:6px 14px; font-size:.8rem; }
@@ -1101,7 +1114,7 @@
   <!-- SCREEN: PERSONAL BUILDER -->
   <div id="build-screen" class="screen">
     <div class="card">
-      <button class="back-link" onclick="goToScreen(builderBackTarget)"><span class="back-link-icon" aria-hidden="true">←</span><span>Back</span></button>
+      <button class="back-link" onclick="goBackFromBuilder()"><span class="back-link-icon" aria-hidden="true">←</span><span>Back</span></button>
       <h2>Build your routine</h2>
       <div class="hint" style="margin-bottom:14px;">Click items to add them to your routine, in the order you want to do them.</div>
       <div class="section-label">Suggest a routine</div>
@@ -3773,6 +3786,7 @@ LEVEL_ORDER.forEach((lvl,i)=>{
 let currentRecommended=[], currentExcluded=[];
 let myRoutine = [];
 let builderBackTarget = "intake";   // "home" when the builder was opened from My Saved Routines
+window.goBackFromBuilder = function(){ goToScreen(builderBackTarget); };
 
 window.submitIntake = function(){
   const issues = Array.from(issuesGrid.querySelectorAll("input:checked")).map(i=>i.value);
@@ -3887,7 +3901,7 @@ function dmNewState(){
     convs:[], convState:"idle",
     main:{ kind:"none" }, active:null, ui:null, sideUi:null,
     msgs:[], hasMore:false, threadState:"idle", threadSeq:0, loadingMore:false,
-    sending:false, lastSendAt:0,
+    sending:false, lastSendAt:0, myTags:null, peerTags:{}, tagBusy:false,
     people:[], peopleState:"idle", peopleQ:"", peopleEnd:false, peopleSeq:0, peopleBusy:null, peopleResultsQ:null, peopleErr:"", profileBusy:false,
     blocked:[], blockedState:"idle", saving:false,
     channel:null, chanState:"", retryTimer:null, retryDelay:0, markTimer:null, listTimer:null, searchTimer:null
@@ -3896,6 +3910,7 @@ function dmNewState(){
 let dm = dmNewState();
 function dmReset(){
   dmGen++;
+  try { dmCloseTagUi(); } catch(e){}
   try { if(dm.channel) sb.removeChannel(dm.channel); } catch(e){}
   [dm.retryTimer, dm.markTimer, dm.listTimer, dm.searchTimer].forEach(t => { if(t) clearTimeout(t); });
   dm = dmNewState();
@@ -5491,7 +5506,7 @@ function dmAutosize(){ const ta = dm.ui && dm.ui.ta; if(!ta) return; ta.style.he
 // ---------- actions ----------
 function dmOpenConv(conv){
   dm.active = conv; dm.main = { kind:"thread" }; dm.msgs = []; dm.threadState = "loading"; dm.loadingMore = false; dm.sending = false;
-  dmRenderAll(); dmLoadThread();
+  dmRenderAll(); dmLoadThread(); dmLoadMyTags(); dmLoadPeerTags(conv);
 }
 function dmCloseMain(){ dm.main = { kind:"none" }; dm.active = null; dm.msgs = []; dm.ui = null; dmRenderAll(); }
 async function dmMessagePerson(person){
@@ -5818,7 +5833,13 @@ function dmRenderMessages(stick){
     if(day && day !== lastDay){ list.appendChild(dmEl("div", "dm-day", day)); lastDay = day; }
     const mine = !!m.local || (conv.iAmLow !== undefined && m.from_low === conv.iAmLow);
     const row = dmEl("div", "dm-row " + (mine ? "dm-mine" : "dm-theirs") + (m.status === "sending" ? " dm-sending" : "") + (m.status === "failed" ? " dm-failed" : ""));
-    row.appendChild(dmEl("div", "dm-bubble", m.body));
+    const bubble = dmEl("div", "dm-bubble", m.body);
+    row.appendChild(bubble);
+    if(m.status !== "failed"){
+      const te = dmTagsEl(mine ? dm.myTags : dm.peerTags[conv.peerPid]);
+      if(te) row.appendChild(te);
+      if(mine) dmAttachTagMenu(bubble);
+    }
     const meta = dmEl("div", "dm-meta");
     meta.appendChild(dmEl("span", "", m.status === "sending" ? "Sending..." : (m.status === "failed" ? "Not sent" : dmFmtTime(m.created_at))));
     if(m.status === "failed"){
@@ -5880,6 +5901,105 @@ function dmRenderReport(main){
   const go = dmBtn("Send report", "btn-primary", async () => { go.disabled = true; await dmSubmitReport(ctx, sel.value, det.value.replace(/^\s+|\s+$/g, "")); go.disabled = false; });
   row.appendChild(go); row.appendChild(dmBtn("Cancel", "btn-secondary", () => { dm.main = (dm.main.back && dm.main.back.kind !== "report") ? dm.main.back : { kind:"none" }; dmRenderAll(); }));
   card.appendChild(row); main.appendChild(card);
+}
+
+// ---------- Member tags: up to 3 of the user's own unlocked achievements, shown under their messages ----------
+// Tags are stored server-side (chat_member_tags, written only through dm_set_my_tags, which checks the user's real
+// unlocked achievements). The other person reads them through dm_get_peer_tags. Nothing is cached on the device.
+const DM_MAX_TAGS = 3;
+function dmTagDef(key){ return ACHIEVEMENTS.find(a => a.key === key) || null; }
+function dmTagsEl(keys){
+  const defs = (Array.isArray(keys) ? keys : []).map(dmTagDef).filter(Boolean).slice(0, DM_MAX_TAGS);
+  if(!defs.length) return null;
+  const w = dmEl("div", "dm-tags");
+  defs.forEach(a => { const t = dmEl("span", "dm-tag", a.icon + " " + a.title); t.title = a.desc; w.appendChild(t); });
+  return w;
+}
+async function dmLoadMyTags(){
+  if(!authUser || p2IsOffline()) return;
+  const gen = dmGen, uid = authUser.id;
+  let res; try { res = await p2WithTimeout(sb.from("chat_member_tags").select("tag_keys").eq("user_id", uid).maybeSingle(), 15000); } catch(e){ res = { error:e }; }
+  if(!dmCurrent(gen, uid) || res.error) return;
+  dm.myTags = (res.data && Array.isArray(res.data.tag_keys)) ? res.data.tag_keys : [];
+  dmRenderMessages(false);
+}
+async function dmLoadPeerTags(conv){
+  if(!authUser || !conv || !conv.peerPid || p2IsOffline()) return;
+  const gen = dmGen, uid = authUser.id, pid = conv.peerPid;
+  let res; try { res = await p2WithTimeout(sb.rpc("dm_get_peer_tags", { peer_public_id:String(pid) }), 15000); } catch(e){ res = { error:e }; }
+  if(!dmCurrent(gen, uid) || res.error) return;
+  dm.peerTags[pid] = Array.isArray(res.data) ? res.data : [];
+  dmRenderMessages(false);
+}
+function dmCloseTagMenu(){ const m = document.getElementById("dm-ctx"); if(m) m.remove(); }
+function dmCloseTagUi(){ dmCloseTagMenu(); const b = document.getElementById("dm-tag-modal"); if(b) b.remove(); }
+function dmAttachTagMenu(bubble){
+  bubble.tabIndex = 0;
+  bubble.addEventListener("contextmenu", e => { e.preventDefault(); dmOpenTagMenu(e.clientX, e.clientY); });
+  let timer = null;     // long-press for touch screens
+  const stop = () => { if(timer){ clearTimeout(timer); timer = null; } };
+  bubble.addEventListener("touchstart", e => { const t = e.touches && e.touches[0]; if(!t) return; stop(); timer = setTimeout(() => { timer = null; dmOpenTagMenu(t.clientX, t.clientY); }, 550); }, { passive:true });
+  ["touchmove", "touchend", "touchcancel"].forEach(ev => bubble.addEventListener(ev, stop, { passive:true }));
+}
+function dmOpenTagMenu(x, y){
+  dmCloseTagMenu();
+  const menu = dmEl("div", "dm-ctx"); menu.id = "dm-ctx"; menu.setAttribute("role", "menu");
+  const item = dmBtn("Add tag", "dm-ctx-item", () => { dmCloseTagMenu(); dmOpenTagPicker(); });
+  item.setAttribute("role", "menuitem"); menu.appendChild(item); document.body.appendChild(menu);
+  const w = menu.offsetWidth || 140, h = menu.offsetHeight || 40;
+  menu.style.left = Math.max(8, Math.min(x, window.innerWidth - w - 8)) + "px";
+  menu.style.top = Math.max(8, Math.min(y, window.innerHeight - h - 8)) + "px";
+  item.focus();
+  const close = ev => { if(ev.type === "keydown" && ev.key !== "Escape") return; if(ev.type === "click" && menu.contains(ev.target)) return; dmCloseTagMenu(); cleanup(); };
+  const cleanup = () => { document.removeEventListener("click", close, true); document.removeEventListener("keydown", close, true); window.removeEventListener("scroll", close, true); window.removeEventListener("resize", close, true); };
+  setTimeout(() => { document.addEventListener("click", close, true); document.addEventListener("keydown", close, true); window.addEventListener("scroll", close, true); window.addEventListener("resize", close, true); }, 0);
+}
+async function dmOpenTagPicker(){
+  if(!authUser) return;
+  try { await loadUserData(); } catch(e){}
+  if(!authUser || !userData.achievements) return;
+  if(dm.myTags === null) await dmLoadMyTags();
+  const unlocked = ACHIEVEMENTS.filter(a => userData.achievements.has(a.key));
+  const picked = new Set((dm.myTags || []).filter(k => unlocked.some(a => a.key === k)));
+  const back = dmEl("div", "dm-modal-back"); back.id = "dm-tag-modal";
+  const box = dmEl("div", "dm-modal"); box.setAttribute("role", "dialog"); box.setAttribute("aria-modal", "true"); box.setAttribute("aria-label", "Choose tags");
+  box.appendChild(dmEl("h3", "", "Choose up to " + DM_MAX_TAGS + " tags"));
+  box.appendChild(dmEl("div", "hint", "Your tags appear under every message you send in chats. Tags are your unlocked achievements."));
+  const count = dmEl("div", "dm-count"); box.appendChild(count);
+  const boxes = [];
+  const refresh = () => {
+    count.textContent = picked.size + " / " + DM_MAX_TAGS + " selected";
+    boxes.forEach(([cb, key]) => { cb.disabled = !picked.has(key) && picked.size >= DM_MAX_TAGS; });
+  };
+  ACHIEVEMENTS.forEach(a => {
+    const has = userData.achievements.has(a.key);
+    const row = dmEl("label", "dm-tagopt" + (has ? "" : " locked"));
+    const cb = dmEl("input"); cb.type = "checkbox"; cb.checked = picked.has(a.key); cb.disabled = !has;
+    cb.addEventListener("change", () => { if(cb.checked){ if(picked.size >= DM_MAX_TAGS){ cb.checked = false; return; } picked.add(a.key); } else picked.delete(a.key); refresh(); });
+    const txt = dmEl("span"); txt.appendChild(document.createTextNode(a.icon + " " + a.title)); txt.appendChild(dmEl("small", "", has ? a.desc : "Locked: " + a.desc));
+    row.appendChild(cb); row.appendChild(txt); box.appendChild(row);
+    if(has) boxes.push([cb, a.key]);
+  });
+  if(!unlocked.length) box.appendChild(dmEl("div", "hint", "You haven't unlocked any achievements yet. Complete a practice session to earn your first tag."));
+  const acts = dmEl("div", "nav-row");
+  const save = dmBtn("Save", "btn-primary", async () => {
+    if(dm.tagBusy) return;
+    if(p2IsOffline()){ toast("You're offline. Try again when connected."); return; }
+    const gen = dmGen, uid = authUser.id; dm.tagBusy = true; save.disabled = true;
+    const keys = ACHIEVEMENTS.map(a => a.key).filter(k => picked.has(k));
+    let res; try { res = await p2WithTimeout(sb.rpc("dm_set_my_tags", { tag_keys:keys }), 15000); } catch(e){ res = { error:e }; }
+    if(!dmCurrent(gen, uid)) return;
+    dm.tagBusy = false; save.disabled = false;
+    if(res.error){ toast("Couldn't save your tags. Please try again."); return; }
+    dm.myTags = Array.isArray(res.data) ? res.data : keys;
+    dmCloseTagUi(); dmRenderMessages(false); toast("Tags saved.");
+  });
+  acts.appendChild(save); acts.appendChild(dmBtn("Cancel", "btn-secondary", dmCloseTagUi)); box.appendChild(acts);
+  back.appendChild(box);
+  back.addEventListener("click", e => { if(e.target === back) dmCloseTagUi(); });
+  back.addEventListener("keydown", e => { if(e.key === "Escape") dmCloseTagUi(); });
+  document.body.appendChild(back); refresh();
+  const first = box.querySelector("input:not([disabled])") || save; first.focus();
 }
 
 // ---------- entry points ----------
