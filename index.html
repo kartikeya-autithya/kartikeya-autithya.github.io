@@ -5763,6 +5763,14 @@ function dmRenderProfileForm(body){
   const p = dm.profile;
   body.appendChild(dmEl("h3", "", p ? "Your chat profile" : "Create your chat profile"));
   body.appendChild(dmEl("div", "hint", "Other signed-in members can see your name, bio and interests if you choose to be listed. Never put your email, phone number or address here. Your health details and routines are never shared."));
+  // Achievement tags are managed from Messages → My profile.
+  body.appendChild(dmEl("div", "section-label", "Achievement tags"));
+  body.appendChild(dmEl("div", "hint", "Choose which of your unlocked achievements appear under your direct messages."));
+  const editTagsBtn = dmBtn("Edit Achievement Tags", "btn-secondary", () => dmOpenTagPicker());
+  editTagsBtn.setAttribute("aria-label", "Edit achievement tags displayed with your direct messages");
+  const tagRow = dmEl("div", "nav-row");
+  tagRow.appendChild(editTagsBtn);
+  body.appendChild(tagRow);
   const name = dmEl("input"); name.type = "text"; name.maxLength = 40; name.className = "dm-search"; name.placeholder = "Public name (not your email)"; name.value = p ? p.display_name : "";
   name.setAttribute("aria-label", "Public name");
   const bio = dmEl("textarea"); bio.rows = 3; bio.maxLength = 160; bio.placeholder = "Short bio (optional, up to 160 characters)"; bio.value = p && p.bio ? p.bio : "";
@@ -5838,7 +5846,6 @@ function dmRenderMessages(stick){
     if(m.status !== "failed"){
       const te = dmTagsEl(mine ? dm.myTags : dm.peerTags[conv.peerPid]);
       if(te) row.appendChild(te);
-      if(mine) dmAttachTagMenu(bubble);
     }
     const meta = dmEl("div", "dm-meta");
     meta.appendChild(dmEl("span", "", m.status === "sending" ? "Sending..." : (m.status === "failed" ? "Not sent" : dmFmtTime(m.created_at))));
