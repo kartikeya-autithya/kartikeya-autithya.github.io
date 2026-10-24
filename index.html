@@ -539,6 +539,8 @@
   .dm-mine .dm-tags { justify-content:flex-end; }
   .dm-tag { font-size:.68rem; padding:2px 8px; border-radius:999px; border:1px solid var(--border); background:#0f1612; color:var(--text); white-space:nowrap; }
   .dm-mine .dm-bubble { cursor:context-menu; }
+  .dm-profile-tags { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:10px; }
+  .dm-profile-tags .dm-tags { margin-top:0; }
   .dm-ctx { position:fixed; z-index:1000; min-width:130px; background:#121b17; border:1px solid var(--border); border-radius:8px; padding:4px; box-shadow:0 6px 20px rgba(0,0,0,.45); }
   .dm-ctx-item { display:block; width:100%; text-align:left; background:transparent; color:var(--text); padding:8px 14px; font-size:.85rem; border-radius:6px; }
   .dm-ctx-item:hover, .dm-ctx-item:focus-visible { background:#1c2823; }
@@ -5779,6 +5781,13 @@ function dmRenderProfileForm(body){
   });
   body.appendChild(grid);
   const mk = (text, on) => { const lab = dmEl("label", "checkbox-item dm-toggle"); const cb = dmEl("input"); cb.type = "checkbox"; cb.checked = on; lab.appendChild(cb); lab.appendChild(dmEl("span", "", text)); body.appendChild(lab); return cb; };
+  if(p){
+    body.appendChild(dmEl("div", "section-label", "Tags"));
+    body.appendChild(dmEl("div", "hint", "Show up to " + DM_MAX_TAGS + " of your unlocked achievements under your messages. Saved separately from the profile form."));
+    const tagBox = dmEl("div", "dm-profile-tags"); tagBox.id = "dm-profile-tags"; body.appendChild(tagBox);
+    dmRefreshProfileTags();
+    if(dm.myTags === null) dmLoadMyTags();
+  }
   body.appendChild(dmEl("div", "section-label", "Visibility"));
   const disc = mk("Let others find and message me", p ? !!p.discoverable : false);
   const allow = mk("Accept new conversations from people who find me", p ? !!p.allow_messages : true);
@@ -5921,7 +5930,7 @@ async function dmLoadMyTags(){
   let res; try { res = await p2WithTimeout(sb.from("chat_member_tags").select("tag_keys").eq("user_id", uid).maybeSingle(), 15000); } catch(e){ res = { error:e }; }
   if(!dmCurrent(gen, uid) || res.error) return;
   dm.myTags = (res.data && Array.isArray(res.data.tag_keys)) ? res.data.tag_keys : [];
-  dmRenderMessages(false);
+  dmRenderMessages(false); dmRefreshProfileTags();
 }
 async function dmLoadPeerTags(conv){
   if(!authUser || !conv || !conv.peerPid || p2IsOffline()) return;
@@ -5930,6 +5939,14 @@ async function dmLoadPeerTags(conv){
   if(!dmCurrent(gen, uid) || res.error) return;
   dm.peerTags[pid] = Array.isArray(res.data) ? res.data : [];
   dmRenderMessages(false);
+}
+function dmRefreshProfileTags(){
+  const box = document.getElementById("dm-profile-tags"); if(!box) return;
+  box.textContent = "";
+  const te = dmTagsEl(dm.myTags);
+  if(te) box.appendChild(te);
+  else box.appendChild(dmEl("span", "hint", dm.myTags === null ? "Loading..." : "No tags selected."));
+  box.appendChild(dmBtn("Choose tags", "btn-secondary", () => dmOpenTagPicker()));
 }
 function dmCloseTagMenu(){ const m = document.getElementById("dm-ctx"); if(m) m.remove(); }
 function dmCloseTagUi(){ dmCloseTagMenu(); const b = document.getElementById("dm-tag-modal"); if(b) b.remove(); }
@@ -5992,7 +6009,7 @@ async function dmOpenTagPicker(){
     dm.tagBusy = false; save.disabled = false;
     if(res.error){ toast("Couldn't save your tags. Please try again."); return; }
     dm.myTags = Array.isArray(res.data) ? res.data : keys;
-    dmCloseTagUi(); dmRenderMessages(false); toast("Tags saved.");
+    dmCloseTagUi(); dmRenderMessages(false); dmRefreshProfileTags(); toast("Tags saved.");
   });
   acts.appendChild(save); acts.appendChild(dmBtn("Cancel", "btn-secondary", dmCloseTagUi)); box.appendChild(acts);
   back.appendChild(box);
